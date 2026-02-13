@@ -28,11 +28,15 @@
 #define CONFIG(x)				(0)
 #define mdelay(x)				delay(x)
 #define die(...)					
-#define MIN(x, y)				min(x,y)
-#define MAX(x, y)				max(x,y)
+#define MIN(x, y)				((x) < (y) ? (x) : (y))
+#define MAX(x, y)				((x) > (y) ? (x) : (y))
 
 #include <stdbool.h>
 #include "api/Common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum edid_modes {
 	EDID_MODE_640x480_60Hz,
@@ -131,5 +135,9 @@ void edid_set_framebuffer_bits_per_pixel(struct edid *edid, int fb_bpp,
 void set_vbe_mode_info_valid(const struct edid *edid, uintptr_t fb_addr);
 void set_vbe_framebuffer_orientation(enum lb_fb_orientation orientation);
 int set_display_mode(struct edid *edid, enum edid_modes mode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EDID_H */

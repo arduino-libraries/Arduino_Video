@@ -1,17 +1,26 @@
-/**
-  ******************************************************************************
-  * @file    dsi.cpp
-  * @author  
-  * @version 
-  * @date    
-  * @brief   
-  ******************************************************************************
-  */
+/*
+ * Copyright (C) Arduino s.r.l. and/or its affiliated companies
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#ifdef ARDUINO_ARCH_MBED
 
 /* Includes ------------------------------------------------------------------*/
 #include <Arduino.h>
 
-#include "dsi.h"
+#include "../dsi.h"
+#include "../logging.h"
 #include "SDRAM.h"
 
 /* Private define ------------------------------------------------------------*/
@@ -249,11 +258,18 @@ int dsi_init(uint8_t bus, struct edid *edid, struct display_timing *dt) {
 	dsi_layerInit(1, FB_ADDRESS_0 + (lcd_x_size * lcd_y_size * BYTES_PER_PIXEL));
 
 	HAL_DSI_PatternGeneratorStop(&dsi);
-	
+
 	dsi_lcdClear(0);
 	dsi_drawCurrentFrameBuffer();
 	dsi_lcdClear(0);
 	dsi_drawCurrentFrameBuffer();
+
+#if defined(ANX_LOG_ENABLE)
+	/* Dump registers for debugging */
+	dsi_dump_registers();
+#endif
+
+	return 0;
 }
 
 void dsi_lcdClear(uint32_t Color) {
@@ -266,11 +282,11 @@ void dsi_lcdFillArea(void *pDst, uint32_t xSize, uint32_t ySize, uint32_t ColorM
 }
 
 void dsi_lcdDrawImage(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint32_t ColorMode) {
-#if defined(__CORTEX_M7) 
+#if defined(__CORTEX_M7)
 	SCB_CleanInvalidateDCache();
 	SCB_InvalidateICache();
 #endif
-	
+
 	/* Configure the DMA2D Mode, Color Mode and output offset */
 	dma2d.Init.Mode         = DMA2D_M2M_PFC;
 	dma2d.Init.ColorMode    = DMA2D_OUTPUT_RGB565;
@@ -337,7 +353,7 @@ void dsi_drawCurrentFrameBuffer(bool reload) {
 	/* LTDC reload request within next vertical blanking */
 	reloadLTDC_status = 0;
 	HAL_LTDC_Reload(&ltdc, LTDC_SRCR_VBR);
-	
+
 	while(reloadLTDC_status == 0) {
 		/* Wait till reload takes effect */
 		delay(1);
@@ -412,4 +428,4 @@ extern "C" void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc) {
   reloadLTDC_status = 1;
 }
 
-/**** END OF FILE ****/
+#endif /* ARDUINO_ARCH_MBED */

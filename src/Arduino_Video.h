@@ -17,42 +17,35 @@
  */
 
 /**
- * @file Arduino_H7_Video.h
+ * @file Arduino_Video.h
  * @author Leonardo Cavagnis
- * @brief Header file for the Arduino H7 Video library.
+ * @brief Header file for the Arduino Video library.
  *
- * This library allows to manage the video output on Arduino boards based on the STM32H7 microcontroller 
+ * This library allows to manage the video output on Arduino boards,
  * providing functions to draw graphics on the screen.
  */
 
-#ifndef _ARDUINO_H7_VIDEO_H
-#define _ARDUINO_H7_VIDEO_H
+#ifndef _ARDUINO_VIDEO_H
+#define _ARDUINO_VIDEO_H
 
 /* Includes ------------------------------------------------------------------*/
-#include "H7DisplayShield.h"
-#if __has_include ("HasIncludeArduinoGraphics.h")
-#include "ArduinoGraphics.h"
-#define HAS_ARDUINOGRAPHICS
-#endif
-
-/* Exported defines ----------------------------------------------------------*/
-
-/* Exported enumeration ------------------------------------------------------*/
+#include "platform.h"
+#include "DisplayShield.h"
 
 /* Class ----------------------------------------------------------------------*/
 
 /**
- * @class Arduino_H7_Video
+ * @class Arduino_Video
  * @brief The main class for managing the video controller and the display.
  */
-class Arduino_H7_Video
-#ifdef HAS_ARDUINOGRAPHICS
+class Arduino_Video
+#ifdef ARDUINO_VIDEO_HAS_GRAPHICS
  : public ArduinoGraphics
 #endif
 {
 public:
 /**
- * @brief Constructs a new Arduino_H7_Video object with the specified width, height, and display shield.
+ * @brief Constructs a new Arduino_Video object with the specified width, height, and display shield.
  * 
  * @param width The width of the display.
  * @param height The height of the display.
@@ -61,17 +54,17 @@ public:
  *               - USBCVideo: Display attach to the USB-C port
  */
 #if defined(ARDUINO_PORTENTA_H7_M7)
-  Arduino_H7_Video(int width = 1024, int height = 768, H7DisplayShield &shield = USBCVideo);
-#elif defined(ARDUINO_GIGA)
-  Arduino_H7_Video(int width = 800, int height = 480, H7DisplayShield &shield = GigaDisplayShield);
+  Arduino_Video(int width = 1024, int height = 768, DisplayShield &shield = USBCVideo);
+#elif defined(ARDUINO_GIGA) && defined(ARDUINO_ARCH_MBED)
+  Arduino_Video(int width = 800, int height = 480, DisplayShield &shield = GigaDisplayShield);
 #else
-  Arduino_H7_Video(int width, int height, H7DisplayShield &shield);
+  #error "Arduino_Video: unsupported board or core configuration"
 #endif
 
   /**
-   * @brief Destructor for the Arduino_H7_Video object.
+   * @brief Destructor for the Arduino_Video object.
    */
-  ~Arduino_H7_Video();
+  ~Arduino_Video();
 
   /**
    * @brief Initialize the video controller and display.
@@ -113,7 +106,7 @@ public:
    */
    bool detect();
 
-#ifdef HAS_ARDUINOGRAPHICS
+#ifdef ARDUINO_VIDEO_HAS_GRAPHICS
   /**
    * @brief Clear the display.
    */
@@ -141,11 +134,11 @@ public:
   virtual void set(int x, int y, uint8_t r, uint8_t g, uint8_t b);
 #endif
 private:
-    H7DisplayShield*    _shield;
+    DisplayShield*    _shield;
     bool                _rotated;
     int                 _edidMode;
     uint32_t            _width;
     uint32_t            _height;
 };
 
-#endif /* _ARDUINO_H7_VIDEO_H */
+#endif /* _ARDUINO_VIDEO_H */

@@ -5,7 +5,7 @@
   by Leonardo Cavagnis
 */
 
-#include "Arduino_H7_Video.h"
+#include "Arduino_Video.h"
 #include "ArduinoGraphics.h"
 
 #include "img_arduinologo.h"
@@ -17,16 +17,15 @@
 INCBIN(test, "/home/user/Downloads/test.bin");
 */
 
-Arduino_H7_Video Display(800, 480, GigaDisplayShield);
-//Arduino_H7_Video Display(1024, 768, USBCVideo);
+Arduino_Video Display;
 
 Image img_arduinologo(ENCODING_RGB16, (uint8_t *) texture_raw, 300, 300);
 
 void error() {
     while (true) {
-        digitalWrite(LEDR, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
         delay(500);
-        digitalWrite(LEDR, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
         delay(500);
     }
 }

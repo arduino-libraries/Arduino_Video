@@ -1,18 +1,26 @@
-
 /*
   LVGLDemo
 
-  created 17 Apr 2023
+  Demonstrates basic LVGL widgets: image, checkboxes, button, slider and bar.
+
+  Note: to customize LVGL settings (e.g., enable additional widgets), edit
+  lv_conf_user.h in this sketch folder.
+
   by Leonardo Cavagnis
 */
 
-#include "Arduino_H7_Video.h"
+#include "Arduino_Video.h"
+
+#ifdef ARDUINO_VIDEO_HAS_TOUCH
 #include "Arduino_GigaDisplayTouch.h"
+#endif
 
 #include "lvgl.h"
 
-Arduino_H7_Video          Display(800, 480, GigaDisplayShield); /* Arduino_H7_Video Display(1024, 768, USBCVideo); */
-Arduino_GigaDisplayTouch  TouchDetector;
+Arduino_Video Display;
+#ifdef ARDUINO_VIDEO_HAS_TOUCH
+Arduino_GigaDisplayTouch TouchDetector;
+#endif
 
 /* Button click event callback */
 static void btn_event_cb(lv_event_t * e) {
@@ -30,9 +38,9 @@ static void set_slider_val(void * bar, int32_t val) {
 
 void error() {
     while (true) {
-        digitalWrite(LEDR, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
         delay(500);
-        digitalWrite(LEDR, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
         delay(500);
     }
 }
@@ -44,7 +52,9 @@ void setup() {
       error();
   }
 
+#ifdef ARDUINO_VIDEO_HAS_TOUCH
   TouchDetector.begin();
+#endif
 
   /* Create a container with grid 2x2 */
   static lv_coord_t col_dsc[] = {370, 370, LV_GRID_TEMPLATE_LAST};
@@ -88,11 +98,7 @@ void setup() {
   lv_style_init(&style_radio);
   lv_style_set_radius(&style_radio, LV_RADIUS_CIRCLE);
   lv_style_init(&style_radio_chk);
-  #if (LVGL_VERSION_MAJOR == 9)
   lv_style_set_bg_image_src(&style_radio_chk, NULL);
-  #else
-  lv_style_set_bg_img_src(&style_radio_chk, NULL);
-  #endif
   
   cb = lv_checkbox_create(obj);
   lv_checkbox_set_text(cb, "Lemon");

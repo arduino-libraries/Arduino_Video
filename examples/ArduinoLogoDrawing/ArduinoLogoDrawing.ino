@@ -5,17 +5,16 @@
   by Leonardo Cavagnis
 */
 
-#include "Arduino_H7_Video.h"
+#include "Arduino_Video.h"
 #include "ArduinoGraphics.h"
 
-Arduino_H7_Video Display(800, 480, GigaDisplayShield);
-//Arduino_H7_Video Display(1024, 768, USBCVideo);
+Arduino_Video Display;
 
 void error() {
     while (true) {
-        digitalWrite(LEDR, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
         delay(500);
-        digitalWrite(LEDR, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
         delay(500);
     }
 }

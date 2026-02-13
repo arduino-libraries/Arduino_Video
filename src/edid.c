@@ -36,24 +36,7 @@
 #include <edid.h>
 
 #include <helpers.h>
-
-#define EDID_LOGENABLED 0
-
-#if EDID_LOGENABLED
-	#define EDIDERROR(format, ...) \
-			printk(BIOS_ERR, "ERROR: %s: " format, __func__, ##__VA_ARGS__)
-	#define EDIDWARNING(format, ...) \
-			printk(BIOS_WARNING, "%s: " format, __func__, ##__VA_ARGS__)
-	#define EDIDDEBUG(format, ...) \
-			printk(BIOS_SPEW, "%s: " format, __func__, ##__VA_ARGS__)
-#else
-	#define EDIDERROR(format ...) \
-		do { } while (0)
-	#define EDIDWARNING(format ...) \
-		do { } while (0)
-	#define EDIDDEBUG(format ...) \
-		do { } while (0)
-#endif
+#include "logging.h"
 
 struct edid_context {
 	int claims_one_point_oh;
@@ -167,10 +150,10 @@ detailed_cvt_descriptor(unsigned char *x, int first)
 	reduced	= (x[2] & 0x01);
 
 	if (!valid) {
-		EDIDDEBUG( "    (broken)\n");
+		ANX_LOG_DBG( "    (broken)");
 	} else {
-		EDIDDEBUG(
-			"    %dx%d @ (%s%s%s%s%s) Hz (%s%s preferred)\n",
+		ANX_LOG_DBG(
+			"    %dx%d @ (%s%s%s%s%s) Hz (%s%s preferred)",
 		       width, height,
 		       fifty ? "50 " : "",
 		       sixty ? "60 " : "",
@@ -220,12 +203,10 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 	struct edid *out = &tmp_edid;
 	int i;
 
-	if (console_log_level(BIOS_SPEW)) {
-		EDIDDEBUG( "Hex of detail: ");
-		for (i = 0; i < 18; i++)
-			EDIDDEBUG( "%02x", x[i]);
-		EDIDDEBUG( "\n");
-	}
+	ANX_LOG_DBG("Hex of detail: ");
+	for (i = 0; i < 18; i++)
+		ANX_LOG_DBG("%02x", x[i]);
+	ANX_LOG_DBG("");
 
 	/* Result might already have some valid fields like mode_is_supported */
 	*out = *result_edid;
@@ -234,15 +215,15 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 		/* Monitor descriptor block, not detailed timing descriptor. */
 		if (x[2] != 0) {
 			/* 1.3, 3.10.3 */
-			EDIDDEBUG(
-				"Monitor descriptor block has byte 2 nonzero (0x%02x)\n",
+			ANX_LOG_DBG(
+				"Monitor descriptor block has byte 2 nonzero (0x%02x)",
 			       x[2]);
 			c->has_valid_descriptor_pad = 0;
 		}
 		if (x[3] != 0xfd && x[4] != 0x00) {
 			/* 1.3, 3.10.3 */
-			EDIDDEBUG(
-				"Monitor descriptor block has byte 4 nonzero (0x%02x)\n",
+			ANX_LOG_DBG(
+				"Monitor descriptor block has byte 4 nonzero (0x%02x)",
 			       x[4]);
 			c->has_valid_descriptor_pad = 0;
 		}
@@ -255,25 +236,25 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 			 * 0x0f seems to be common in laptop panels.
 			 * 0x0e is used by EPI: http://www.epi-standard.org/
 			 */
-			EDIDDEBUG(
-				"Manufacturer-specified data, tag %d\n", x[3]);
+			ANX_LOG_DBG(
+				"Manufacturer-specified data, tag %d", x[3]);
 			return 1;
 		}
 		switch (x[3]) {
 		case 0x10:
-			EDIDDEBUG( "Dummy block\n");
+			ANX_LOG_DBG( "Dummy block");
 			for (i = 5; i < 18; i++)
 				if (x[i] != 0x00)
 					c->has_valid_dummy_block = 0;
 			return 1;
 		case 0xF7:
 			/* TODO */
-			EDIDDEBUG( "Established timings III\n");
+			ANX_LOG_DBG( "Established timings III");
 			return 1;
 		case 0xF8:
 		{
 			int valid_cvt = 1; /* just this block */
-			EDIDDEBUG( "CVT 3-byte code descriptor:\n");
+			ANX_LOG_DBG( "CVT 3-byte code descriptor:");
 			if (x[5] != 0x01) {
 				c->has_valid_cvt = 0;
 				return 0;
@@ -286,18 +267,18 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 		}
 		case 0xF9:
 			/* TODO */
-			EDIDDEBUG( "Color management data\n");
+			ANX_LOG_DBG( "Color management data");
 			return 1;
 		case 0xFA:
 			/* TODO */
-			EDIDDEBUG( "More standard timings\n");
+			ANX_LOG_DBG( "More standard timings");
 			return 1;
 		case 0xFB:
 			/* TODO */
-			EDIDDEBUG( "Color point\n");
+			ANX_LOG_DBG( "Color point");
 			return 1;
 		case 0xFC:
-			EDIDDEBUG( "Monitor name: %s\n",
+			ANX_LOG_DBG( "Monitor name: %s",
 			       extract_string(x + 5,
 					      &c->has_valid_string_termination,
 					      EDID_ASCII_STRING_LENGTH));
@@ -360,30 +341,30 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 				c->has_valid_range_descriptor = 0;
 			if (x[7] + h_min_offset > x[8] + h_max_offset)
 				c->has_valid_range_descriptor = 0;
-			EDIDDEBUG(
+			ANX_LOG_DBG(
 				"Monitor ranges (%s): %d-%dHz V, %d-%dkHz H",
 			       extra_info.range_class,
 			       x[5] + v_min_offset, x[6] + v_max_offset,
 			       x[7] + h_min_offset, x[8] + h_max_offset);
 			if (x[9])
-				EDIDDEBUG(
-					", max dotclock %dMHz\n", x[9] * 10);
+				ANX_LOG_DBG(
+					", max dotclock %dMHz", x[9] * 10);
 			else {
 				if (c->claims_one_point_four)
 					c->has_valid_max_dotclock = 0;
-				EDIDDEBUG( "\n");
+				ANX_LOG_DBG( "");
 			}
 
 			if (is_cvt) {
 				int max_h_pixels = 0;
 
-				EDIDDEBUG( "CVT version %d.%d\n",
+				ANX_LOG_DBG( "CVT version %d.%d",
 					x[11] & 0xf0 >> 4, x[11] & 0x0f);
 
 				if (x[12] & 0xfc) {
 					int raw_offset = (x[12] & 0xfc) >> 2;
-					EDIDDEBUG(
-						"Real max dotclock: %dKHz\n",
+					ANX_LOG_DBG(
+						"Real max dotclock: %dKHz",
 					       (x[9] * 10000)
 						- (raw_offset * 250));
 					if (raw_offset >= 40)
@@ -395,12 +376,12 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 				max_h_pixels |= x[13];
 				max_h_pixels *= 8;
 				if (max_h_pixels)
-					EDIDDEBUG(
-					     "Max active pixels per line: %d\n",
+					ANX_LOG_DBG(
+					     "Max active pixels per line: %d",
 					     max_h_pixels);
 
-				EDIDDEBUG(
-				    "Supported aspect ratios: %s %s %s %s %s\n",
+				ANX_LOG_DBG(
+				    "Supported aspect ratios: %s %s %s %s %s",
 				     x[14] & 0x80 ? "4:3" : "",
 				     x[14] & 0x40 ? "16:9" : "",
 				     x[14] & 0x20 ? "16:10" : "",
@@ -409,62 +390,62 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 				if (x[14] & 0x07)
 					c->has_valid_range_descriptor = 0;
 
-				EDIDDEBUG( "Preferred aspect ratio: ");
+				ANX_LOG_DBG( "Preferred aspect ratio: ");
 				switch ((x[15] & 0xe0) >> 5) {
 				case 0x00:
-					EDIDDEBUG( "4:3");
+					ANX_LOG_DBG( "4:3");
 					break;
 				case 0x01:
-					EDIDDEBUG( "16:9");
+					ANX_LOG_DBG( "16:9");
 					break;
 				case 0x02:
-					EDIDDEBUG( "16:10");
+					ANX_LOG_DBG( "16:10");
 					break;
 				case 0x03:
-					EDIDDEBUG( "5:4");
+					ANX_LOG_DBG( "5:4");
 					break;
 				case 0x04:
-					EDIDDEBUG( "15:9");
+					ANX_LOG_DBG( "15:9");
 					break;
 				default:
-					EDIDDEBUG( "(broken)");
+					ANX_LOG_DBG( "(broken)");
 					break;
 				}
-				EDIDDEBUG( "\n");
+				ANX_LOG_DBG( "");
 
 				if (x[15] & 0x04)
-					EDIDDEBUG(
-					    "Supports CVT standard blanking\n");
+					ANX_LOG_DBG(
+					    "Supports CVT standard blanking");
 				if (x[15] & 0x10)
-					EDIDDEBUG(
-					    "Supports CVT reduced blanking\n");
+					ANX_LOG_DBG(
+					    "Supports CVT reduced blanking");
 
 				if (x[15] & 0x07)
 					c->has_valid_range_descriptor = 0;
 
 				if (x[16] & 0xf0) {
-					EDIDDEBUG(
-						"Supported display scaling:\n");
+					ANX_LOG_DBG(
+						"Supported display scaling:");
 					if (x[16] & 0x80)
-						EDIDDEBUG(
-						    "    Horizontal shrink\n");
+						ANX_LOG_DBG(
+						    "    Horizontal shrink");
 					if (x[16] & 0x40)
-						EDIDDEBUG(
-						    "    Horizontal stretch\n");
+						ANX_LOG_DBG(
+						    "    Horizontal stretch");
 					if (x[16] & 0x20)
-						EDIDDEBUG(
-						    "    Vertical shrink\n");
+						ANX_LOG_DBG(
+						    "    Vertical shrink");
 					if (x[16] & 0x10)
-						EDIDDEBUG(
-						    "    Vertical stretch\n");
+						ANX_LOG_DBG(
+						    "    Vertical stretch");
 				}
 
 				if (x[16] & 0x0f)
 					c->has_valid_range_descriptor = 0;
 
 				if (x[17])
-					EDIDDEBUG(
-					  "Preferred vertical refresh: %d Hz\n",
+					ANX_LOG_DBG(
+					  "Preferred vertical refresh: %d Hz",
 					  x[17]);
 				else
 					c->warning_zero_preferred_refresh = 1;
@@ -486,18 +467,18 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 			strcpy(result_edid->ascii_string, extract_string(x + 5,
 				&c->has_valid_string_termination,
 						EDID_ASCII_STRING_LENGTH));
-			EDIDDEBUG( "ASCII string: %s\n",
+			ANX_LOG_DBG( "ASCII string: %s",
 				result_edid->ascii_string);
 			return 1;
 		case 0xFF:
-			EDIDDEBUG( "Serial number: %s\n",
+			ANX_LOG_DBG( "Serial number: %s",
 			       extract_string(x + 5,
 			       &c->has_valid_string_termination,
 			       EDID_ASCII_STRING_LENGTH));
 			return 1;
 		default:
-			EDIDDEBUG(
-				"Unknown monitor description type %d\n",
+			ANX_LOG_DBG(
+				"Unknown monitor description type %d",
 				x[3]);
 			return 0;
 		}
@@ -509,8 +490,8 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 	bool supported = true;
 	if ((x[0] + (x[1] << 8)) * 10 > 62500) {
 		supported = false;
-		EDIDDEBUG(
-			"Not supported on stm32\n");
+		ANX_LOG_DBG(
+			"Not supported on stm32");
 	}
 
 	/* Edid contains pixel clock in terms of 10KHz */
@@ -593,11 +574,11 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 		break;
 	}
 
-	EDIDDEBUG(
+	ANX_LOG_DBG(
 		"Detailed mode (IN HEX): Clock %d KHz, %x mm x %x mm\n"
 	       "               %04x %04x %04x %04x hborder %x\n"
 	       "               %04x %04x %04x %04x vborder %x\n"
-	       "               %chsync %cvsync%s%s %s\n",
+	       "               %chsync %cvsync%s%s %s",
 	       out->mode.pixel_clock,
 	       extra_info.x_mm,
 	       extra_info.y_mm,
@@ -612,7 +593,7 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 	       extra_info.stereo);
 
 	if (!c->did_detailed_timing && supported) {
-		EDIDDEBUG( "Did detailed timing\n");
+		ANX_LOG_DBG( "Did detailed timing");
 		c->did_detailed_timing = 1;
 		*result_edid = *out;
 	}
@@ -624,21 +605,21 @@ static int
 do_checksum(unsigned char *x)
 {
 	int valid = 0;
-	EDIDDEBUG( "Checksum: 0x%hhx", x[0x7f]);
+	ANX_LOG_DBG( "Checksum: 0x%hhx", x[0x7f]);
 	{
 		unsigned char sum = 0;
 		int i;
 		for (i = 0; i < 128; i++)
 			sum += x[i];
 		if (sum) {
-			EDIDDEBUG( " (should be 0x%hhx)",
+			ANX_LOG_DBG( " (should be 0x%hhx)",
 				(unsigned char)(x[0x7f] - sum));
 		} else {
 			valid = 1;
-			EDIDDEBUG( " (valid)");
+			ANX_LOG_DBG( " (valid)");
 		}
 	}
-	EDIDDEBUG( "\n");
+	ANX_LOG_DBG( "");
 	return valid;
 }
 
@@ -675,17 +656,17 @@ cea_audio_block(unsigned char *x)
 	int length = x[0] & 0x1f;
 
 	if (length % 3) {
-		EDIDDEBUG( "Broken CEA audio block length %d\n", length);
+		ANX_LOG_DBG( "Broken CEA audio block length %d", length);
 		/* XXX non-conformant */
 		return;
 	}
 
 	for (i = 1; i < length; i += 3) {
 		format = (x[i] & 0x78) >> 3;
-		EDIDDEBUG( "    %s, max channels %d\n",
+		ANX_LOG_DBG( "    %s, max channels %d",
 			audio_format(format), x[i] & 0x07);
-		EDIDDEBUG(
-			"    Supported sample rates (kHz):%s%s%s%s%s%s%s\n",
+		ANX_LOG_DBG(
+			"    Supported sample rates (kHz):%s%s%s%s%s%s%s",
 		       (x[i+1] & 0x40) ? " 192" : "",
 		       (x[i+1] & 0x20) ? " 176.4" : "",
 		       (x[i+1] & 0x10) ? " 96" : "",
@@ -694,14 +675,14 @@ cea_audio_block(unsigned char *x)
 		       (x[i+1] & 0x02) ? " 44.1" : "",
 		       (x[i+1] & 0x01) ? " 32" : "");
 		if (format == 1) {
-			EDIDDEBUG(
-				"    Supported sample sizes (bits):%s%s%s\n",
+			ANX_LOG_DBG(
+				"    Supported sample sizes (bits):%s%s%s",
 			       (x[2] & 0x04) ? " 24" : "",
 			       (x[2] & 0x02) ? " 20" : "",
 			       (x[2] & 0x01) ? " 16" : "");
 		} else if (format <= 8) {
-			EDIDDEBUG(
-				"    Maximum bit rate: %d kHz\n", x[2] * 8);
+			ANX_LOG_DBG(
+				"    Maximum bit rate: %d kHz", x[2] * 8);
 		}
 	}
 }
@@ -713,7 +694,7 @@ cea_video_block(unsigned char *x)
 	int length = x[0] & 0x1f;
 
 	for (i = 1; i < length; i++)
-		EDIDDEBUG( "    VIC %02d %s\n", x[i] & 0x7f,
+		ANX_LOG_DBG( "    VIC %02d %s", x[i] & 0x7f,
 		       x[i] & 0x80 ? "(native)" : "");
 }
 
@@ -724,45 +705,45 @@ cea_hdmi_block(struct edid *out, unsigned char *x)
 
 	out->hdmi_monitor_detected = 1;
 
-	EDIDDEBUG( " (HDMI)\n");
-	EDIDDEBUG(
-	       "    Source physical address %d.%d.%d.%d\n",
+	ANX_LOG_DBG( " (HDMI)");
+	ANX_LOG_DBG(
+	       "    Source physical address %d.%d.%d.%d",
 	       x[4] >> 4, x[4] & 0x0f, x[5] >> 4, x[5] & 0x0f);
 
 	if (length > 5) {
 		if (x[6] & 0x80)
-			EDIDDEBUG( "    Supports_AI\n");
+			ANX_LOG_DBG( "    Supports_AI");
 		if (x[6] & 0x40)
-			EDIDDEBUG( "    DC_48bit\n");
+			ANX_LOG_DBG( "    DC_48bit");
 		if (x[6] & 0x20)
-			EDIDDEBUG( "    DC_36bit\n");
+			ANX_LOG_DBG( "    DC_36bit");
 		if (x[6] & 0x10)
-			EDIDDEBUG( "    DC_30bit\n");
+			ANX_LOG_DBG( "    DC_30bit");
 		if (x[6] & 0x08)
-			EDIDDEBUG( "    DC_Y444\n");
+			ANX_LOG_DBG( "    DC_Y444");
 		/* two reserved */
 		if (x[6] & 0x01)
-			EDIDDEBUG( "    DVI_Dual\n");
+			ANX_LOG_DBG( "    DVI_Dual");
 	}
 
 	if (length > 6)
-		EDIDDEBUG( "    Maximum TMDS clock: %dMHz\n", x[7] * 5);
+		ANX_LOG_DBG( "    Maximum TMDS clock: %dMHz", x[7] * 5);
 
 	/* XXX the walk here is really ugly, and needs to be length-checked */
 	if (length > 7) {
 		int b = 0;
 
 		if (x[8] & 0x80) {
-			EDIDDEBUG( "    Video latency: %d\n", x[9 + b]);
-			EDIDDEBUG( "    Audio latency: %d\n", x[10 + b]);
+			ANX_LOG_DBG( "    Video latency: %d", x[9 + b]);
+			ANX_LOG_DBG( "    Audio latency: %d", x[10 + b]);
 			b += 2;
 		}
 
 		if (x[8] & 0x40) {
-			EDIDDEBUG(
-				"    Interlaced video latency: %d\n", x[9 + b]);
-			EDIDDEBUG(
-				"    Interlaced audio latency: %d\n",
+			ANX_LOG_DBG(
+				"    Interlaced video latency: %d", x[9 + b]);
+			ANX_LOG_DBG(
+				"    Interlaced audio latency: %d",
 				x[10 + b]);
 			b += 2;
 		}
@@ -770,17 +751,17 @@ cea_hdmi_block(struct edid *out, unsigned char *x)
 		if (x[8] & 0x20) {
 			int mask = 0, formats = 0;
 			int len_xx, len_3d;
-			EDIDDEBUG( "    Extended HDMI video details:\n");
+			ANX_LOG_DBG( "    Extended HDMI video details:");
 			if (x[9 + b] & 0x80)
-				EDIDDEBUG( "      3D present\n");
+				ANX_LOG_DBG( "      3D present");
 			if ((x[9 + b] & 0x60) == 0x20) {
-				EDIDDEBUG(
-				  "      All advertised VICs are 3D-capable\n");
+				ANX_LOG_DBG(
+				  "      All advertised VICs are 3D-capable");
 				formats = 1;
 			}
 			if ((x[9 + b] & 0x60) == 0x40) {
-				EDIDDEBUG(
-					"      3D-capable-VIC mask present\n");
+				ANX_LOG_DBG(
+					"      3D-capable-VIC mask present");
 				formats = 1;
 				mask = 1;
 			}
@@ -788,13 +769,13 @@ cea_hdmi_block(struct edid *out, unsigned char *x)
 			case 0x00:
 				break;
 			case 0x08:
-				EDIDDEBUG( "      Base EDID image size is aspect ratio\n");
+				ANX_LOG_DBG( "      Base EDID image size is aspect ratio");
 				break;
 			case 0x10:
-				EDIDDEBUG( "      Base EDID image size is in units of 1cm\n");
+				ANX_LOG_DBG( "      Base EDID image size is in units of 1cm");
 				break;
 			case 0x18:
-				EDIDDEBUG( "      Base EDID image size is in units of 5cm\n");
+				ANX_LOG_DBG( "      Base EDID image size is in units of 5cm");
 				break;
 			}
 			len_xx = (x[10 + b] & 0xe0) >> 5;
@@ -802,35 +783,35 @@ cea_hdmi_block(struct edid *out, unsigned char *x)
 			b += 2;
 
 			if (len_xx) {
-				EDIDDEBUG( "      Skipping %d bytes that HDMI refuses to publicly"
-				       " document\n", len_xx);
+				ANX_LOG_DBG( "      Skipping %d bytes that HDMI refuses to publicly"
+				       " document", len_xx);
 				b += len_xx;
 			}
 
 			if (len_3d) {
 				if (formats) {
 					if (x[9 + b] & 0x01)
-						EDIDDEBUG( "      Side-by-side 3D supported\n");
+						ANX_LOG_DBG( "      Side-by-side 3D supported");
 					if (x[10 + b] & 0x40)
-						EDIDDEBUG( "      Top-and-bottom 3D supported\n");
+						ANX_LOG_DBG( "      Top-and-bottom 3D supported");
 					if (x[10 + b] & 0x01)
-						EDIDDEBUG( "      Frame-packing 3D supported\n");
+						ANX_LOG_DBG( "      Frame-packing 3D supported");
 					b += 2;
 				}
 				if (mask) {
 					int i;
-					EDIDDEBUG(
+					ANX_LOG_DBG(
 						"      3D VIC indices:");
 					/* worst bit ordering ever */
 					for (i = 0; i < 8; i++)
 						if (x[10 + b] & (1 << i))
-							EDIDDEBUG(
+							ANX_LOG_DBG(
 								" %d", i);
 					for (i = 0; i < 8; i++)
 						if (x[9 + b] & (1 << i))
-							EDIDDEBUG(
+							ANX_LOG_DBG(
 								" %d", i + 8);
-					EDIDDEBUG( "\n");
+					ANX_LOG_DBG( "");
 					b += 2;
 				}
 
@@ -854,69 +835,69 @@ cea_block(struct edid *out, unsigned char *x)
 
 	switch ((x[0] & 0xe0) >> 5) {
 	case 0x01:
-		EDIDDEBUG( "  Audio data block\n");
+		ANX_LOG_DBG( "  Audio data block");
 		cea_audio_block(x);
 		break;
 	case 0x02:
-		EDIDDEBUG( "  Video data block\n");
+		ANX_LOG_DBG( "  Video data block");
 		cea_video_block(x);
 		break;
 	case 0x03:
 		/* yes really, endianness lols */
 		oui = (x[3] << 16) + (x[2] << 8) + x[1];
-		EDIDDEBUG( "  Vendor-specific data block, OUI %06x",
+		ANX_LOG_DBG( "  Vendor-specific data block, OUI %06x",
 			oui);
 		if (oui == 0x000c03)
 			cea_hdmi_block(out, x);
 		else
-			EDIDDEBUG( "\n");
+			ANX_LOG_DBG( "");
 		break;
 	case 0x04:
-		EDIDDEBUG( "  Speaker allocation data block\n");
+		ANX_LOG_DBG( "  Speaker allocation data block");
 		break;
 	case 0x05:
-		EDIDDEBUG( "  VESA DTC data block\n");
+		ANX_LOG_DBG( "  VESA DTC data block");
 		break;
 	case 0x07:
-		EDIDDEBUG( "  Extended tag: ");
+		ANX_LOG_DBG( "  Extended tag: ");
 		switch (x[1]) {
 		case 0x00:
-			EDIDDEBUG( "video capability data block\n");
+			ANX_LOG_DBG( "video capability data block");
 			break;
 		case 0x01:
-			EDIDDEBUG( "vendor-specific video data block\n");
+			ANX_LOG_DBG( "vendor-specific video data block");
 			break;
 		case 0x02:
-			EDIDDEBUG(
-			  "VESA video display device information data block\n");
+			ANX_LOG_DBG(
+			  "VESA video display device information data block");
 			break;
 		case 0x03:
-			EDIDDEBUG( "VESA video data block\n");
+			ANX_LOG_DBG( "VESA video data block");
 			break;
 		case 0x04:
-			EDIDDEBUG( "HDMI video data block\n");
+			ANX_LOG_DBG( "HDMI video data block");
 			break;
 		case 0x05:
-			EDIDDEBUG( "Colorimetry data block\n");
+			ANX_LOG_DBG( "Colorimetry data block");
 			break;
 		case 0x10:
-			EDIDDEBUG( "CEA miscellaneous audio fields\n");
+			ANX_LOG_DBG( "CEA miscellaneous audio fields");
 			break;
 		case 0x11:
-			EDIDDEBUG( "Vendor-specific audio data block\n");
+			ANX_LOG_DBG( "Vendor-specific audio data block");
 			break;
 		case 0x12:
-			EDIDDEBUG( "HDMI audio data block\n");
+			ANX_LOG_DBG( "HDMI audio data block");
 			break;
 		default:
 			if (x[1] >= 6 && x[1] <= 15)
-				EDIDDEBUG(
-					"Reserved video block (%02x)\n", x[1]);
+				ANX_LOG_DBG(
+					"Reserved video block (%02x)", x[1]);
 			else if (x[1] >= 19 && x[1] <= 31)
-				EDIDDEBUG(
-					"Reserved audio block (%02x)\n", x[1]);
+				ANX_LOG_DBG(
+					"Reserved audio block (%02x)", x[1]);
 			else
-				EDIDDEBUG( "Unknown (%02x)\n", x[1]);
+				ANX_LOG_DBG( "Unknown (%02x)", x[1]);
 			break;
 		}
 		break;
@@ -924,8 +905,8 @@ cea_block(struct edid *out, unsigned char *x)
 	{
 		int tag = (*x & 0xe0) >> 5;
 		int length = *x & 0x1f;
-		EDIDDEBUG(
-			"  Unknown tag %d, length %d (raw %02x)\n",
+		ANX_LOG_DBG(
+			"  Unknown tag %d, length %d (raw %02x)",
 			tag, length, *x);
 		break;
 	}
@@ -949,32 +930,32 @@ parse_cea(struct edid *out, unsigned char *x, struct edid_context *c)
 				break;
 
 			if (version < 3)
-				EDIDDEBUG(
-					"%d 8-byte timing descriptors\n",
+				ANX_LOG_DBG(
+					"%d 8-byte timing descriptors",
 					(offset - 4) / 8);
 			else if (version == 3) {
 				int i;
-				EDIDDEBUG(
-					"%d bytes of CEA data\n", offset - 4);
+				ANX_LOG_DBG(
+					"%d bytes of CEA data", offset - 4);
 				for (i = 4; i < offset; i += (x[i] & 0x1f) + 1)
 					cea_block(out, x + i);
 			}
 
 			if (version >= 2) {
 				if (x[3] & 0x80)
-					EDIDDEBUG(
-					  "Underscans PC formats by default\n");
+					ANX_LOG_DBG(
+					  "Underscans PC formats by default");
 				if (x[3] & 0x40)
-					EDIDDEBUG(
-						"Basic audio support\n");
+					ANX_LOG_DBG(
+						"Basic audio support");
 				if (x[3] & 0x20)
-					EDIDDEBUG(
-						"Supports YCbCr 4:4:4\n");
+					ANX_LOG_DBG(
+						"Supports YCbCr 4:4:4");
 				if (x[3] & 0x10)
-					EDIDDEBUG(
-						"Supports YCbCr 4:2:2\n");
-				EDIDDEBUG(
-					"%d native detailed modes\n",
+					ANX_LOG_DBG(
+						"Supports YCbCr 4:2:2");
+				ANX_LOG_DBG(
+					"%d native detailed modes",
 					x[3] & 0x0f);
 			}
 
@@ -993,45 +974,45 @@ parse_cea(struct edid *out, unsigned char *x, struct edid_context *c)
 static void
 extension_version(struct edid *out, unsigned char *x)
 {
-	EDIDDEBUG( "Extension version: %d\n", x[1]);
+	ANX_LOG_DBG( "Extension version: %d", x[1]);
 }
 
 static int
 parse_extension(struct edid *out, unsigned char *x, struct edid_context *c)
 {
 	int conformant_extension = 0;
-	EDIDDEBUG( "\n");
+	ANX_LOG_DBG( "");
 
 	switch (x[0]) {
 	case 0x02:
-		EDIDDEBUG( "CEA extension block\n");
+		ANX_LOG_DBG( "CEA extension block");
 		extension_version(out, x);
 		conformant_extension = parse_cea(out, x, c);
 		break;
 	case 0x10:
-		EDIDDEBUG( "VTB extension block\n");
+		ANX_LOG_DBG( "VTB extension block");
 		break;
 	case 0x40:
-		EDIDDEBUG( "DI extension block\n");
+		ANX_LOG_DBG( "DI extension block");
 		break;
 	case 0x50:
-		EDIDDEBUG( "LS extension block\n");
+		ANX_LOG_DBG( "LS extension block");
 		break;
 	case 0x60:
-		EDIDDEBUG( "DPVL extension block\n");
+		ANX_LOG_DBG( "DPVL extension block");
 		break;
 	case 0xF0:
-		EDIDDEBUG( "Block map\n");
+		ANX_LOG_DBG( "Block map");
 		break;
 	case 0xFF:
-		EDIDDEBUG( "Manufacturer-specific extension block\n");
+		ANX_LOG_DBG( "Manufacturer-specific extension block");
 		break;
 	default:
-		EDIDDEBUG( "Unknown extension block\n");
+		ANX_LOG_DBG( "Unknown extension block");
 		break;
 	}
 
-	EDIDDEBUG( "\n");
+	ANX_LOG_DBG( "");
 
 	return conformant_extension;
 }
@@ -1066,17 +1047,17 @@ static void print_subsection(const char *name, unsigned char *edid, int start,
 {
 	int i;
 
-	EDIDDEBUG( "%s:", name);
+	ANX_LOG_DBG( "%s:", name);
 	for (i = strlen(name); i < 15; i++)
-		EDIDDEBUG( " ");
+		ANX_LOG_DBG( " ");
 	for (i = start; i <= end; i++)
-		EDIDDEBUG( " %02x", edid[i]);
-	EDIDDEBUG( "\n");
+		ANX_LOG_DBG( " %02x", edid[i]);
+	ANX_LOG_DBG( "");
 }
 
 static void dump_breakdown(unsigned char *edid)
 {
-	EDIDDEBUG( "Extracted contents:\n");
+	ANX_LOG_DBG( "Extracted contents:");
 	print_subsection("header", edid, 0, 7);
 	print_subsection("serial number", edid, 8, 17);
 	print_subsection("version", edid, 18, 19);
@@ -1090,7 +1071,7 @@ static void dump_breakdown(unsigned char *edid)
 	print_subsection("descriptor 4", edid, 108, 125);
 	print_subsection("extensions", edid, 126, 126);
 	print_subsection("checksum", edid, 127, 127);
-	EDIDDEBUG( "\n");
+	ANX_LOG_DBG( "");
 }
 
 /*
@@ -1130,12 +1111,12 @@ int set_display_mode(struct edid *edid, enum edid_modes mode)
 		return 0;
 
 	if (edid->mode_is_supported[mode]) {
-		printk(BIOS_DEBUG, "Forcing mode %s\n", known_modes[mode].name);
+		ANX_LOG_DBG("Forcing mode %s", known_modes[mode].name);
 		edid->mode = known_modes[mode];
 		return 0;
 	}
 
-	EDIDERROR( "Requested display mode not supported.\n");
+	ANX_LOG_ERROR( "Requested display mode not supported.");
 	return -1;
 }
 
@@ -1165,14 +1146,14 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 	memset(out, 0, sizeof(*out));
 
 	if (!edid) {
-		EDIDERROR( "No EDID found\n");
+		ANX_LOG_ERROR( "No EDID found");
 		return EDID_ABSENT;
 	}
 
 	dump_breakdown(edid);
 
 	if (memcmp(edid, "\x00\xFF\xFF\xFF\xFF\xFF\xFF\x00", 8)) {
-		EDIDERROR( "No header found\n");
+		ANX_LOG_ERROR( "No header found");
 		return EDID_ABSENT;
 	}
 
@@ -1183,7 +1164,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 	extra_info.serial = (unsigned int)(edid[0x0C] + (edid[0x0D] << 8)
 				     + (edid[0x0E] << 16) + (edid[0x0F] << 24));
 
-	EDIDDEBUG( "Manufacturer: %s Model %x Serial Number %u\n",
+	ANX_LOG_DBG( "Manufacturer: %s Model %x Serial Number %u",
 	       out->manufacturer_name,
 	       (unsigned short)(edid[0x0A] + (edid[0x0B] << 8)),
 	       (unsigned int)(edid[0x0C] + (edid[0x0D] << 8)
@@ -1195,8 +1176,8 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		if (edid[0x11] > 0x0f) {
 			if (edid[0x10] == 0xff) {
 				c.has_valid_year = 1;
-				EDIDDEBUG(
-					"Made week %hhd of model year %hhd\n",
+				ANX_LOG_DBG(
+					"Made week %hhd of model year %hhd",
 					edid[0x10], edid[0x11]);
 				extra_info.week = edid[0x10];
 				extra_info.year = edid[0x11];
@@ -1206,8 +1187,8 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 				 */
 				if (edid[0x11] + 90 <= 2013) {
 					c.has_valid_year = 1;
-					EDIDDEBUG(
-						"Made week %hhd of %d\n",
+					ANX_LOG_DBG(
+						"Made week %hhd of %d",
 					       edid[0x10], edid[0x11] + 1990);
 					extra_info.week = edid[0x10];
 					extra_info.year = edid[0x11] + 1990;
@@ -1216,14 +1197,14 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		}
 	}
 
-	EDIDDEBUG( "EDID version: %hhd.%hhd\n", edid[0x12], edid[0x13]);
+	ANX_LOG_DBG( "EDID version: %hhd.%hhd", edid[0x12], edid[0x13]);
 	extra_info.version[0] = edid[0x12];
 	extra_info.version[1] = edid[0x13];
 
 	if (edid[0x12] == 1) {
 		if (edid[0x13] > 4) {
-			EDIDDEBUG(
-				"Claims > 1.4, assuming 1.4 conformance\n");
+			ANX_LOG_DBG(
+				"Claims > 1.4, assuming 1.4 conformance");
 			edid[0x13] = 4;
 		}
 		switch (edid[0x13]) {
@@ -1245,16 +1226,16 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 	if (edid[0x14] & 0x80) {
 		int conformance_mask;
 		analog = 0;
-		EDIDDEBUG( "Digital display\n");
+		ANX_LOG_DBG( "Digital display");
 		if (c.claims_one_point_four) {
 			conformance_mask = 0;
 			if ((edid[0x14] & 0x70) == 0x00)
-				EDIDDEBUG( "Color depth is undefined\n");
+				ANX_LOG_DBG( "Color depth is undefined");
 			else if ((edid[0x14] & 0x70) == 0x70)
 				c.nonconformant_digital_display = 1;
 			else
-				EDIDDEBUG(
-					"%d bits per primary color channel\n",
+				ANX_LOG_DBG(
+					"%d bits per primary color channel",
 				       ((edid[0x14] & 0x70) >> 3) + 4);
 			out->panel_bits_per_color = ((edid[0x14] & 0x70) >> 3)
 				+ 4;
@@ -1262,23 +1243,23 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 
 			switch (edid[0x14] & 0x0f) {
 			case 0x00:
-				EDIDDEBUG(
-					"Digital interface is not defined\n");
+				ANX_LOG_DBG(
+					"Digital interface is not defined");
 				break;
 			case 0x01:
-				EDIDDEBUG( "DVI interface\n");
+				ANX_LOG_DBG( "DVI interface");
 				break;
 			case 0x02:
-				EDIDDEBUG( "HDMI-a interface\n");
+				ANX_LOG_DBG( "HDMI-a interface");
 				break;
 			case 0x03:
-				EDIDDEBUG( "HDMI-b interface\n");
+				ANX_LOG_DBG( "HDMI-b interface");
 				break;
 			case 0x04:
-				EDIDDEBUG( "MDDI interface\n");
+				ANX_LOG_DBG( "MDDI interface");
 				break;
 			case 0x05:
-				EDIDDEBUG( "DisplayPort interface\n");
+				ANX_LOG_DBG( "DisplayPort interface");
 				break;
 			default:
 				c.nonconformant_digital_display = 1;
@@ -1288,7 +1269,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		} else if (c.claims_one_point_two) {
 			conformance_mask = 0x7E;
 			if (edid[0x14] & 0x01)
-				EDIDDEBUG( "DFP 1.x compatible TMDS\n");
+				ANX_LOG_DBG( "DFP 1.x compatible TMDS");
 		} else
 			conformance_mask = 0x7F;
 
@@ -1303,7 +1284,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		extra_info.voltage = voltage;
 		extra_info.sync = sync;
 
-		EDIDDEBUG( "Analog display, Input voltage level: %s V\n",
+		ANX_LOG_DBG( "Analog display, Input voltage level: %s V",
 		       voltage == 3 ? "0.7/0.7" :
 		       voltage == 2 ? "1.0/0.4" :
 		       voltage == 1 ? "0.714/0.286" :
@@ -1311,11 +1292,11 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 
 		if (c.claims_one_point_four) {
 			if (edid[0x14] & 0x10)
-				EDIDDEBUG(
-					"Blank-to-black setup/pedestal\n");
+				ANX_LOG_DBG(
+					"Blank-to-black setup/pedestal");
 			else
-				EDIDDEBUG(
-					"Blank level equals black level\n");
+				ANX_LOG_DBG(
+					"Blank level equals black level");
 		} else if (edid[0x14] & 0x10) {
 			/*
 			 * XXX this is just the X text.  1.3 says "if set,
@@ -1323,10 +1304,10 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 			 * per appropriate Signal Level Standard".  Whatever
 			 * _that_ means.
 			 */
-			EDIDDEBUG( "Configurable signal levels\n");
+			ANX_LOG_DBG( "Configurable signal levels");
 		}
 
-		EDIDDEBUG( "Sync: %s%s%s%s\n",
+		ANX_LOG_DBG( "Sync: %s%s%s%s",
 			sync & 0x08 ? "Separate " : "",
 			sync & 0x04 ? "Composite " : "",
 			sync & 0x02 ? "SyncOnGreen " : "",
@@ -1335,92 +1316,92 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 
 
 	if (edid[0x15] && edid[0x16]) {
-		EDIDDEBUG( "Maximum image size: %d cm x %d cm\n",
+		ANX_LOG_DBG( "Maximum image size: %d cm x %d cm",
 		       edid[0x15], edid[0x16]);
 	} else if (c.claims_one_point_four && (edid[0x15] || edid[0x16])) {
 		if (edid[0x15]) { /* edid[0x15] != 0 && edid[0x16] == 0 */
 			unsigned int ratio = 100000/(edid[0x15] + 99);
-			EDIDDEBUG(
-				"Aspect ratio is %u.%03u (landscape)\n",
+			ANX_LOG_DBG(
+				"Aspect ratio is %u.%03u (landscape)",
 				ratio / 1000, ratio % 1000);
 		} else { /* edid[0x15] == 0 && edid[0x16] != 0 */
 			unsigned int ratio = 100000/(edid[0x16] + 99);
-			EDIDDEBUG(
-				"Aspect ratio is %u.%03u (portrait)\n",
+			ANX_LOG_DBG(
+				"Aspect ratio is %u.%03u (portrait)",
 				ratio / 1000, ratio % 1000);
 		}
 	} else {
 		/* Either or both can be zero for 1.3 and before */
-		EDIDDEBUG( "Image size is variable\n");
+		ANX_LOG_DBG( "Image size is variable");
 	}
 
 	if (edid[0x17] == 0xff) {
 		if (c.claims_one_point_four)
-			EDIDDEBUG(
-				"Gamma is defined in an extension block\n");
+			ANX_LOG_DBG(
+				"Gamma is defined in an extension block");
 		else
 			/* XXX Technically 1.3 doesn't say this... */
-			EDIDDEBUG( "Gamma: 1.0\n");
+			ANX_LOG_DBG( "Gamma: 1.0");
 	} else
-		EDIDDEBUG( "Gamma: %d%%\n", ((edid[0x17] + 100)));
-	EDIDDEBUG( "Check DPMS levels\n");
+		ANX_LOG_DBG( "Gamma: %d%%", ((edid[0x17] + 100)));
+	ANX_LOG_DBG( "Check DPMS levels");
 	if (edid[0x18] & 0xE0) {
-		EDIDDEBUG( "DPMS levels:");
+		ANX_LOG_DBG( "DPMS levels:");
 		if (edid[0x18] & 0x80)
-			EDIDDEBUG( " Standby");
+			ANX_LOG_DBG( " Standby");
 		if (edid[0x18] & 0x40)
-			EDIDDEBUG( " Suspend");
+			ANX_LOG_DBG( " Suspend");
 		if (edid[0x18] & 0x20)
-			EDIDDEBUG( " Off");
-		EDIDDEBUG( "\n");
+			ANX_LOG_DBG( " Off");
+		ANX_LOG_DBG( "");
 	}
 
 	/* FIXME: this is from 1.4 spec, check earlier */
 	if (analog) {
 		switch (edid[0x18] & 0x18) {
 		case 0x00:
-			EDIDDEBUG( "Monochrome or grayscale display\n");
+			ANX_LOG_DBG( "Monochrome or grayscale display");
 			break;
 		case 0x08:
-			EDIDDEBUG( "RGB color display\n");
+			ANX_LOG_DBG( "RGB color display");
 			break;
 		case 0x10:
-			EDIDDEBUG( "Non-RGB color display\n");
+			ANX_LOG_DBG( "Non-RGB color display");
 			break;
 		case 0x18:
-			EDIDDEBUG( "Undefined display color type\n");
+			ANX_LOG_DBG( "Undefined display color type");
 			break;
 		}
 	} else {
-		EDIDDEBUG( "Supported color formats: RGB 4:4:4");
+		ANX_LOG_DBG( "Supported color formats: RGB 4:4:4");
 		if (edid[0x18] & 0x10)
-			EDIDDEBUG( ", YCrCb 4:4:4");
+			ANX_LOG_DBG( ", YCrCb 4:4:4");
 		if (edid[0x18] & 0x08)
-			EDIDDEBUG( ", YCrCb 4:2:2");
-		EDIDDEBUG( "\n");
+			ANX_LOG_DBG( ", YCrCb 4:2:2");
+		ANX_LOG_DBG( "");
 	}
 
 	if (edid[0x18] & 0x04)
-		EDIDDEBUG(
-			"Default (sRGB) color space is primary color space\n");
+		ANX_LOG_DBG(
+			"Default (sRGB) color space is primary color space");
 	if (edid[0x18] & 0x02) {
-		EDIDDEBUG(
-			"First detailed timing is preferred timing\n");
+		ANX_LOG_DBG(
+			"First detailed timing is preferred timing");
 		c.has_preferred_timing = 1;
 	}
 	if (edid[0x18] & 0x01)
-		EDIDDEBUG(
-			"Supports GTF timings within operating range\n");
+		ANX_LOG_DBG(
+			"Supports GTF timings within operating range");
 
 	/* XXX color section */
 
-	EDIDDEBUG( "Established timings supported:\n");
+	ANX_LOG_DBG( "Established timings supported:");
 	/* it's not yet clear we want all this stuff in the edid struct.
 	 * Let's wait.
 	 */
 	for (i = 0; i < 17; i++) {
 		if (edid[0x23 + i / 8] & (1 << (7 - i % 8))) {
-			EDIDDEBUG( "  %dx%d@%dHz\n",
+			ANX_LOG_DBG( "  %dx%d@%dHz",
 				established_timings[i].x,
 				established_timings[i].y,
 				established_timings[i].refresh);
@@ -1438,7 +1419,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 
 	}
 
-	EDIDDEBUG( "Standard timings supported:\n");
+	ANX_LOG_DBG( "Standard timings supported:");
 	for (i = 0; i < 8; i++) {
 		uint8_t b1 = edid[0x26 + i * 2], b2 = edid[0x26 + i * 2 + 1];
 		unsigned int x, y = 0, refresh;
@@ -1447,8 +1428,8 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 			continue;
 
 		if (b1 == 0) {
-			EDIDDEBUG(
-				"non-conformant standard timing (0 horiz)\n");
+			ANX_LOG_DBG(
+				"non-conformant standard timing (0 horiz)");
 			continue;
 		}
 		x = (b1 + 31) * 8;
@@ -1471,7 +1452,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		}
 		refresh = 60 + (b2 & 0x3f);
 
-		EDIDDEBUG( "  %dx%d@%dHz\n", x, y, refresh);
+		ANX_LOG_DBG( "  %dx%d@%dHz", x, y, refresh);
 		for (j = 0; j < NUM_KNOWN_MODES; j++) {
 			if (known_modes[j].ha == x && known_modes[j].va == y &&
 					known_modes[j].refresh == refresh)
@@ -1480,7 +1461,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 	}
 
 	/* detailed timings */
-	EDIDDEBUG( "Detailed timings\n");
+	ANX_LOG_DBG( "Detailed timings");
 	for (i = 0; i < 4; i++) {
 		c.has_valid_detailed_blocks &= detailed_block(
 				out, edid + 0x36 + i * 18, 0, &c);
@@ -1493,7 +1474,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 
 	/* check this, 1.4 verification guide says otherwise */
 	if (edid[0x7e]) {
-		EDIDDEBUG( "Has %d extension blocks\n", edid[0x7e]);
+		ANX_LOG_DBG( "Has %d extension blocks", edid[0x7e]);
 		/* 2 is impossible because of the block map */
 		if (edid[0x7e] != 2)
 			c.has_valid_extension_count = 1;
@@ -1501,7 +1482,7 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		c.has_valid_extension_count = 1;
 	}
 
-	EDIDDEBUG( "Checksum\n");
+	ANX_LOG_DBG( "Checksum");
 	c.has_valid_checksum = do_checksum(edid);
 
 	/* EDID v2.0 has a larger blob (256 bytes) and may have some problem in
@@ -1519,22 +1500,22 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		    !c.has_valid_descriptor_pad ||
 			!c.has_preferred_timing) {
 			c.conformant = EDID_NOT_CONFORMANT;
-			EDIDERROR(
-				"EDID block does NOT conform to EDID 1.4!\n");
+			ANX_LOG_ERROR(
+				"EDID block does NOT conform to EDID 1.4!");
 		}
 
 		if (c.nonconformant_digital_display)
-			EDIDERROR(
-			       "\tDigital display field contains garbage: %x\n",
+			ANX_LOG_ERROR(
+			       "\tDigital display field contains garbage: %x",
 			       c.nonconformant_digital_display);
 		if (!c.has_valid_string_termination)
-			EDIDERROR(
-			   "\tDetailed block string not properly terminated\n");
+			ANX_LOG_ERROR(
+			   "\tDetailed block string not properly terminated");
 		if (!c.has_valid_descriptor_pad)
-			EDIDERROR(
-				"\tInvalid descriptor block padding\n");
+			ANX_LOG_ERROR(
+				"\tInvalid descriptor block padding");
 		if (!c.has_preferred_timing)
-			EDIDERROR( "\tMissing preferred timing\n");
+			ANX_LOG_ERROR( "\tMissing preferred timing");
 	} else if (c.claims_one_point_three) {
 		if (c.nonconformant_digital_display ||
 		    !c.has_valid_string_termination ||
@@ -1550,52 +1531,52 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		 * messages.
 		 */
 		if (c.conformant == EDID_NOT_CONFORMANT)
-			EDIDERROR(
-				"EDID block does NOT conform to EDID 1.3!\n");
+			ANX_LOG_ERROR(
+				"EDID block does NOT conform to EDID 1.3!");
 		else if (!c.has_name_descriptor || !c.has_range_descriptor)
-			EDIDWARNING( "WARNING: EDID block does NOT "
-			       "fully conform to EDID 1.3.\n");
+			ANX_LOG_INFO( "WARNING: EDID block does NOT "
+			       "fully conform to EDID 1.3.");
 
 		if (c.nonconformant_digital_display)
-			EDIDERROR(
-			       "\tDigital display field contains garbage: %x\n",
+			ANX_LOG_ERROR(
+			       "\tDigital display field contains garbage: %x",
 			       c.nonconformant_digital_display);
 		if (!c.has_name_descriptor)
-			EDIDERROR( "\tMissing name descriptor\n");
+			ANX_LOG_ERROR( "\tMissing name descriptor");
 		if (!c.has_preferred_timing)
-			EDIDERROR( "\tMissing preferred timing\n");
+			ANX_LOG_ERROR( "\tMissing preferred timing");
 		if (!c.has_range_descriptor)
-			EDIDERROR( "\tMissing monitor ranges\n");
+			ANX_LOG_ERROR( "\tMissing monitor ranges");
 		/* Might be more than just 1.3 */
 		if (!c.has_valid_descriptor_pad)
-			EDIDERROR(
-				"\tInvalid descriptor block padding\n");
+			ANX_LOG_ERROR(
+				"\tInvalid descriptor block padding");
 		if (!c.has_valid_string_termination) /* Likewise */
-			EDIDERROR(
-			   "\tDetailed block string not properly terminated\n");
+			ANX_LOG_ERROR(
+			   "\tDetailed block string not properly terminated");
 	} else if (c.claims_one_point_two) {
 		if (c.nonconformant_digital_display ||
 			!c.has_valid_string_termination) {
 			c.conformant = EDID_NOT_CONFORMANT;
-			EDIDERROR(
-				"EDID block does NOT conform to EDID 1.2!\n");
+			ANX_LOG_ERROR(
+				"EDID block does NOT conform to EDID 1.2!");
 		}
 		if (c.nonconformant_digital_display)
-			EDIDERROR(
-			       "\tDigital display field contains garbage: %x\n",
+			ANX_LOG_ERROR(
+			       "\tDigital display field contains garbage: %x",
 			       c.nonconformant_digital_display);
 		if (!c.has_valid_string_termination)
-			EDIDERROR(
-			   "\tDetailed block string not properly terminated\n");
+			ANX_LOG_ERROR(
+			   "\tDetailed block string not properly terminated");
 	} else if (c.claims_one_point_oh) {
 		if (c.seen_non_detailed_descriptor) {
 			c.conformant = EDID_NOT_CONFORMANT;
-			EDIDERROR(
-				"EDID block does NOT conform to EDID 1.0!\n");
+			ANX_LOG_ERROR(
+				"EDID block does NOT conform to EDID 1.0!");
 		}
 		if (c.seen_non_detailed_descriptor)
-			EDIDERROR(
-				"\tHas descriptor blocks other than detailed timings\n");
+			ANX_LOG_ERROR(
+				"\tHas descriptor blocks other than detailed timings");
 	}
 
 	if (c.nonconformant_extension ||
@@ -1610,47 +1591,47 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 	    !c.has_valid_range_descriptor ||
 	    !c.manufacturer_name_well_formed) {
 		c.conformant = EDID_NOT_CONFORMANT;
-		EDIDERROR( "EDID block does not conform at all!\n");
+		ANX_LOG_ERROR( "EDID block does not conform at all!");
 		if (c.nonconformant_extension)
-			EDIDERROR(
-				"\tHas %d nonconformant extension block(s)\n",
+			ANX_LOG_ERROR(
+				"\tHas %d nonconformant extension block(s)",
 			       c.nonconformant_extension);
 		if (!c.has_valid_checksum)
-			EDIDERROR( "\tBlock has broken checksum\n");
+			ANX_LOG_ERROR( "\tBlock has broken checksum");
 		if (!c.has_valid_cvt)
-			EDIDERROR( "\tBroken 3-byte CVT blocks\n");
+			ANX_LOG_ERROR( "\tBroken 3-byte CVT blocks");
 		if (!c.has_valid_year)
-			EDIDERROR( "\tBad year of manufacture\n");
+			ANX_LOG_ERROR( "\tBad year of manufacture");
 		if (!c.has_valid_week)
-			EDIDERROR( "\tBad week of manufacture\n");
+			ANX_LOG_ERROR( "\tBad week of manufacture");
 		if (!c.has_valid_detailed_blocks)
-			EDIDERROR(
-				"\tDetailed blocks filled with garbage\n");
+			ANX_LOG_ERROR(
+				"\tDetailed blocks filled with garbage");
 		if (!c.has_valid_dummy_block)
-			EDIDERROR( "\tDummy block filled with garbage\n");
+			ANX_LOG_ERROR( "\tDummy block filled with garbage");
 		if (!c.has_valid_extension_count)
-			EDIDERROR(
-				"\tImpossible extension block count\n");
+			ANX_LOG_ERROR(
+				"\tImpossible extension block count");
 		if (!c.manufacturer_name_well_formed)
-			EDIDERROR(
-				"\tManufacturer name field contains garbage\n");
+			ANX_LOG_ERROR(
+				"\tManufacturer name field contains garbage");
 		if (!c.has_valid_descriptor_ordering)
-			EDIDERROR(
-			     "\tInvalid detailed timing descriptor ordering\n");
+			ANX_LOG_ERROR(
+			     "\tInvalid detailed timing descriptor ordering");
 		if (!c.has_valid_range_descriptor)
-			EDIDERROR(
-				"\tRange descriptor contains garbage\n");
+			ANX_LOG_ERROR(
+				"\tRange descriptor contains garbage");
 		if (!c.has_valid_max_dotclock)
-			EDIDERROR(
-				"\tEDID 1.4 block does not set max dotclock\n");
+			ANX_LOG_ERROR(
+				"\tEDID 1.4 block does not set max dotclock");
 	}
 
 	if (c.warning_excessive_dotclock_correction)
-		EDIDERROR(
-		       "Warning: CVT block corrects dotclock by more than 9.75MHz\n");
+		ANX_LOG_ERROR(
+		       "Warning: CVT block corrects dotclock by more than 9.75MHz");
 	if (c.warning_zero_preferred_refresh)
-		EDIDERROR(
-		       "Warning: CVT block does not set preferred refresh rate\n");
+		ANX_LOG_ERROR(
+		       "Warning: CVT block does not set preferred refresh rate");
 	return c.conformant;
 }
 
