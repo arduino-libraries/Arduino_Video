@@ -1,12 +1,14 @@
 /**
   ******************************************************************************
   * @file    st7701.cpp
-  * @author  
-  * @version 
-  * @date    
-  * @brief   
+  * @author
+  * @version
+  * @date
+  * @brief   ST7701 display controller driver (Giga Display Shield only)
   ******************************************************************************
   */
+
+#ifdef ARDUINO_ARCH_MBED
 
 /* Includes ------------------------------------------------------------------*/
 #include "Arduino.h"
@@ -259,5 +261,7 @@ void Generic_Long_Write(uint8_t* pdata, int length) {
 void DCS_Short_Read_NP(uint8_t data0, int length, uint8_t* p_data) {
   HAL_DSI_Read(&hdsi_eval, LCD_ST7701_ID, p_data, length, DSI_DCS_SHORT_PKT_READ, data0, NULL);
 }
+
+#endif /* ARDUINO_ARCH_MBED */
 
 /**** END OF FILE ****/

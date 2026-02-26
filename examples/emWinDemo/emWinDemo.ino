@@ -5,7 +5,7 @@
   by Leonardo Cavagnis
 */
 
-#include "DIALOG.h" /* emWin library includes Arduino_H7_Video and Arduino_GigaDisplayTouch library */
+#include "DIALOG.h" /* emWin library includes Arduino_Video and Arduino_GigaDisplayTouch library */
 
 /* 
 * Main window handler: It creates 4 window childs. 

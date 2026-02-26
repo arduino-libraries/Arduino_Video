@@ -1,11 +1,13 @@
-#include "H7DisplayShield.h"
+#include "DisplayShield.h"
 
 #include "Arduino.h"
 #include "anx7625.h"
-#include "st7701.h"
 extern "C" {
 #include "video_modes.h"
 }
+
+#ifdef ARDUINO_ARCH_MBED
+#include "st7701.h"
 
 int GigaDisplayShieldClass::init(int edidmode) {
     //Init LCD Controller
@@ -21,6 +23,9 @@ int GigaDisplayShieldClass::getEdidMode(int h, int v) {
 int GigaDisplayShieldClass::getStatus() {
     return 1; // TODO: Not implemented;
 }
+
+GigaDisplayShieldClass GigaDisplayShield;
+#endif /* ARDUINO_ARCH_MBED */
 
 int USBCVideoClass::init(int edidmode) {
     struct edid recognized_edid;
@@ -64,5 +69,4 @@ int USBCVideoClass::getStatus() {
     return detected;
 }
 
-GigaDisplayShieldClass GigaDisplayShield;
 USBCVideoClass USBCVideo;

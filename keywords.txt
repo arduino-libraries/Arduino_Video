@@ -1,10 +1,10 @@
 ##################################################
-# Syntax Coloring Map For Arduino_H7_Video
+# Syntax Coloring Map For Arduino_Video
 ##################################################
 # Class
 ##################################################
 
-Arduino_H7_Video KEYWORD1
+Arduino_Video KEYWORD1
 
 ##################################################
 # Methods and Functions 

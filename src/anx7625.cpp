@@ -21,9 +21,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <Arduino.h>
-#include <drivers/DigitalOut.h>
-#include <drivers/DigitalInOut.h>
-#include <drivers/I2C.h>
+
+#include "logging.h"
 
 #if defined(ARDUINO_PORTENTA_H7_M7) || defined(PORTENTA_H7_PINS)
 
@@ -32,24 +31,6 @@
 #include "video_modes.h"
 
 /* Private define ------------------------------------------------------------*/
-#define ANX_LOGENABLED 0
-
-#if ANX_LOGENABLED
-	#define ANXERROR(format, ...) \
-			printk(BIOS_ERR, "ERROR: %s: " format, __func__, ##__VA_ARGS__)
-	#define ANXINFO(format, ...) \
-			printk(BIOS_INFO, "%s: " format, __func__, ##__VA_ARGS__)
-	#define ANXDEBUG(format, ...) \
-			printk(BIOS_DEBUG, "%s: " format, __func__, ##__VA_ARGS__)
-#else
-	#define ANXERROR(format, ...) \
-		do { static volatile int _i = 5; _i++; } while (0)
-	#define ANXINFO(format, ...) \
-		do { } while (0)
-	#define ANXDEBUG(format, ...) \
-		do { } while (0)
-#endif
-
 #define FLASH_LOAD_STA 0x05
 #define FLASH_LOAD_STA_CHK	(1 << 7)
 
@@ -390,14 +371,6 @@ enum AudioWdLen {
 #define FOUR_BLOCK_SIZE     	(ONE_BLOCK_SIZE*4)
 
 /* Private function prototypes -----------------------------------------------*/
-static mbed::DigitalOut video_on(PK_2, 0);
-static mbed::DigitalOut video_rst(PJ_3, 0);
-static mbed::DigitalInOut otg_on(PJ_6, PIN_INPUT, PullUp, 0);
-static mbed::I2C i2cx(I2C_SDA_INTERNAL , I2C_SCL_INTERNAL);
-
-static int i2c_writeb(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t val);
-static int i2c_read_bytes(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t* buf, size_t len);
-static int i2c_readb(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t* val);
 static int i2c_access_workaround(uint8_t bus, uint8_t saddr);
 static int anx7625_reg_read(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t *val);
 static int anx7625_reg_block_read(uint8_t bus, uint8_t saddr, uint8_t reg_addr, uint8_t len, uint8_t *buf);
@@ -455,9 +428,9 @@ int anx7625_dp_start(uint8_t bus, const struct edid *edid, enum edid_modes mode)
 
 	ret = anx7625_dsi_config(bus, &dt);
 	if (ret < 0)
-		ANXERROR("MIPI phy setup error.\n");
+		ANX_LOG_ERROR("MIPI phy setup error.");
 	else
-		ANXINFO("MIPI phy setup OK.\n");
+		ANX_LOG_INFO("MIPI phy setup OK.");
 
 	return ret;
 }
@@ -469,13 +442,13 @@ int anx7625_dp_get_edid(uint8_t bus, struct edid *out) {
 
 	block_num = sp_tx_edid_read(bus, edid, FOUR_BLOCK_SIZE);
 	if (block_num < 0) {
-		ANXERROR("Failed to get eDP EDID.\n");
+		ANX_LOG_ERROR("Failed to get eDP EDID.");
 		return -1;
 	}
 
 	ret = decode_edid(edid, (block_num + 1) * ONE_BLOCK_SIZE, out);
 	if (ret != EDID_CONFORMANT) {
-		ANXINFO("Non conformant EDID.\n");
+		ANX_LOG_INFO("Non conformant EDID.");
 		return 0;
 	}
 
@@ -485,47 +458,50 @@ int anx7625_dp_get_edid(uint8_t bus, struct edid *out) {
 int anx7625_init(uint8_t bus) {
 	int retry_power_on = 3;
 
-	ANXINFO("OTG_ON = 1 -> VBUS OFF\n");
-	if (otg_on != 0) {
-		otg_on.output();
-		otg_on = 1;
-	} else {
-		ANXERROR("Cannot disable VBUS, someone is actively driving OTG_ON (PJ_6, USB_HS ID Pin)\n");
-	}
-	mdelay(1000); // @TODO: wait for VBUS to discharge (VBUS is activated during bootloader, can be removed when fixed)
+	/* Initialize platform-specific hardware */
+	platformInit();
 
-	ANXINFO("Powering on anx7625...\n");
-	video_on = 1;
-	mdelay(10);
-	video_rst = 1;
-	mdelay(10);
+	ANX_LOG_INFO("OTG_ON = 1 -> VBUS OFF");
+	if (platformGpioGet(PLATFORM_GPIO_OTG_ON) != 0) {
+		platformGpioSetDirection(PLATFORM_GPIO_OTG_ON, true);  /* output */
+		platformGpioSet(PLATFORM_GPIO_OTG_ON, true);
+	} else {
+		ANX_LOG_ERROR("Cannot disable VBUS, someone is actively driving OTG_ON (PJ_6, USB_HS ID Pin)");
+	}
+	platformDelayMs(1000); /* wait for VBUS to discharge */
+
+	ANX_LOG_INFO("Powering on anx7625...");
+	platformGpioSet(PLATFORM_GPIO_VIDEO_ON, true);
+	platformDelayMs(10);
+	platformGpioSet(PLATFORM_GPIO_VIDEO_RST, true);
+	platformDelayMs(10);
 
 	while (--retry_power_on) {
 		if (anx7625_power_on_init(bus) == 0)
 			break;
 	}
 	if (!retry_power_on) {
-		ANXERROR("Failed to power on.\n");
+		ANX_LOG_ERROR("Failed to power on.");
 		return -1;
 	}
-	ANXINFO("Powering on anx7625 successfull.\n");
-	mdelay(500); // Wait for anx7625 to be stable
+	ANX_LOG_INFO("Powering on anx7625 successfull.");
+	platformDelayMs(500); /* Wait for anx7625 to be stable */
 
 	if(anx7625_is_power_provider(0)) {
-		ANXINFO("OTG_ON = 0 -> VBUS ON\n");
-		otg_on = 0; // If the pin is still input this has not effect
-		mdelay(1000); // Wait for powered device to be stable
+		ANX_LOG_INFO("OTG_ON = 0 -> VBUS ON");
+		platformGpioSet(PLATFORM_GPIO_OTG_ON, false); /* If the pin is still input this has no effect */
+		platformDelayMs(1000); /* Wait for powered device to be stable */
 	}
 
 	return 0;
 }
 
 int anx7625_wait_hpd_event(uint8_t bus) {
-	ANXINFO("Waiting for HDMI hot plug event...\n");
+	ANX_LOG_INFO("Waiting for HDMI hot plug event...");
 
 	int retry_hpd_change = 10000;
 	while (--retry_hpd_change) {
-		mdelay(10);
+		platformDelayMs(10);
 		int detected = anx7625_hpd_change_detect(bus);
 		if (detected < 0)
 			return -1;
@@ -533,7 +509,7 @@ int anx7625_wait_hpd_event(uint8_t bus) {
 			return 0;
 	}
 
-	ANXERROR("Timed out to detect HPD change on bus %d.\n", bus);
+	ANX_LOG_ERROR("Timed out to detect HPD change on bus %d.", bus);
 	return -1;
 }
 
@@ -542,42 +518,42 @@ int anx7625_get_cc_status(uint8_t bus, uint8_t *cc_status) {
 
 	ret = anx7625_reg_read(bus, RX_P0_ADDR, NEW_CC_STATUS, cc_status); // 0x7e, 0x46
 	if (ret < 0) {
-		ANXERROR("Failed %s", __func__);
+		ANX_LOG_ERROR("Failed %s", __func__);
 		return ret;
 	}
 	
 	switch (*cc_status & 0x0F) {
 		case 0:
-			ANXDEBUG("anx: CC1: SRC.Open\n"); break;
+			ANX_LOG_DBG("anx: CC1: SRC.Open"); break;
 		case 1:
-			ANXDEBUG("anx: CC1: SRC.Rd\n"); break;
+			ANX_LOG_DBG("anx: CC1: SRC.Rd"); break;
 		case 2:
-			ANXDEBUG("anx: CC1: SRC.Ra\n"); break;
+			ANX_LOG_DBG("anx: CC1: SRC.Ra"); break;
 		case 4:
-			ANXDEBUG("anx: CC1: SNK.default\n"); break;
+			ANX_LOG_DBG("anx: CC1: SNK.default"); break;
 		case 8:
-			ANXDEBUG("anx: CC1: SNK.power.1.5\n"); break;
+			ANX_LOG_DBG("anx: CC1: SNK.power.1.5"); break;
 		case 12:
-			ANXDEBUG("anx: CC1: SNK.power.3.0\n"); break;
+			ANX_LOG_DBG("anx: CC1: SNK.power.3.0"); break;
 		default:
-			ANXDEBUG("anx: CC1: Reserved\n");
+			ANX_LOG_DBG("anx: CC1: Reserved");
 	}
 
 	switch ((*cc_status >> 4) & 0x0F) {
 		case 0:
-			ANXDEBUG("anx: CC2: SRC.Open\n"); break;
+			ANX_LOG_DBG("anx: CC2: SRC.Open"); break;
 		case 1:
-			ANXDEBUG("anx: CC2: SRC.Rd\n"); break;
+			ANX_LOG_DBG("anx: CC2: SRC.Rd"); break;
 		case 2:
-			ANXDEBUG("anx: CC2: SRC.Ra\n"); break;
+			ANX_LOG_DBG("anx: CC2: SRC.Ra"); break;
 		case 4:
-			ANXDEBUG("anx: CC2: SNK.default\n"); break;
+			ANX_LOG_DBG("anx: CC2: SNK.default"); break;
 		case 8:
-			ANXDEBUG("anx: CC2: SNK.power.1.5\n"); break;
+			ANX_LOG_DBG("anx: CC2: SNK.power.1.5"); break;
 		case 12:
-			ANXDEBUG("anx: CC2: SNK.power.3.0\n"); break;
+			ANX_LOG_DBG("anx: CC2: SNK.power.3.0"); break;
 		default:
-			ANXDEBUG("anx: CC2: Reserved\n");
+			ANX_LOG_DBG("anx: CC2: Reserved");
 	}
 	
 	return ret;
@@ -588,26 +564,26 @@ int anx7625_read_system_status(uint8_t bus, uint8_t *sys_status) {
 	
 	ret = anx7625_reg_read(bus, RX_P0_ADDR, SYSTEM_STATUS, sys_status); // 0x7e, 0x45
 	if (ret < 0) {
-		ANXERROR("Failed %s", __func__);
+		ANX_LOG_ERROR("Failed %s", __func__);
 		return ret;
 	}
 
 	if (*sys_status & (1<<2))
-		ANXDEBUG("anx: - VCONN status ON\n");
+		ANX_LOG_DBG("anx: - VCONN status ON");
 	if (!(*sys_status & (1<<2)))
-		ANXDEBUG("anx: - VCONN status OFF\n");
+		ANX_LOG_DBG("anx: - VCONN status OFF");
 	if (*sys_status & (1<<3))
-		ANXDEBUG("anx: - VBUS power provider\n");
+		ANX_LOG_DBG("anx: - VBUS power provider");
 	if (!(*sys_status & (1<<3)))
-		ANXDEBUG("anx: - VBUS power consumer\n");
+		ANX_LOG_DBG("anx: - VBUS power consumer");
 	if (*sys_status & (1<<5))
-		ANXDEBUG("anx: - Data Role: DFP\n");
+		ANX_LOG_DBG("anx: - Data Role: DFP");
 	if (!(*sys_status & (1<<5)))
-		ANXDEBUG("anx: - Data Role: UFP\n");
+		ANX_LOG_DBG("anx: - Data Role: UFP");
 	if (*sys_status & (1<<7))
-		ANXDEBUG("anx: - DP HPD high\n");
+		ANX_LOG_DBG("anx: - DP HPD high");
 	if (!(*sys_status & (1<<7)))
-		ANXDEBUG("anx: - DP HPD low\n");
+		ANX_LOG_DBG("anx: - DP HPD low");
 
 	return ret;
 }
@@ -620,7 +596,7 @@ bool anx7625_is_power_provider(uint8_t bus) {
 
 	anx7625_read_system_status(bus, &sys_status);
 	if (ret < 0) {
-		ANXERROR("Failed %s", __func__);
+		ANX_LOG_ERROR("Failed %s", __func__);
 		return false; // Conservative
 	} else {
 		if (sys_status & (1<<3))
@@ -633,23 +609,6 @@ bool anx7625_is_power_provider(uint8_t bus) {
 int anx7625_get_hpd_event(uint8_t bus)  {
 	int ret = anx7625_hpd_change_detect(bus);
 	return ret;
-}
-
-int i2c_writeb(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t val) {
-	char cmd[2];
-	cmd[0] = offset;
-	cmd[1] = val;
-	return i2cx.write(saddr, cmd, 2);
-}
-
-int i2c_read_bytes(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t* buf, size_t len) {
-    i2cx.write(saddr, (char*)&offset, 1);
-    return i2cx.read(saddr, (char*)buf, len);
-}
-
-int i2c_readb(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t* val) {
-    i2cx.write(saddr, (char*)&offset, 1);
-    return i2cx.read(saddr, (char*)val, 1);
 }
 
 /*
@@ -689,9 +648,9 @@ int i2c_access_workaround(uint8_t bus, uint8_t saddr) {
 		break;
 	}
 
-	ret = i2c_writeb(bus, saddr, offset, 0x00);
+	ret = platformI2cWrite(saddr, offset, 0x00);
 	if (ret < 0)
-		ANXERROR("Failed to access %#x:%#x\n", saddr, offset);
+		ANX_LOG_ERROR("Failed to access %#x:%#x", saddr, offset);
 	return ret;
 }
 
@@ -699,9 +658,9 @@ int anx7625_reg_read(uint8_t bus, uint8_t saddr, uint8_t offset, uint8_t *val) {
 	int ret;
 
 	i2c_access_workaround(bus, saddr);
-	ret = i2c_readb(bus, saddr, offset, val);
+	ret = platformI2cRead(saddr, offset, val, 1);
 	if (ret < 0) {
-		ANXERROR("Failed to read i2c reg=%#x:%#x\n", saddr, offset);
+		ANX_LOG_ERROR("Failed to read i2c reg=%#x:%#x", saddr, offset);
 		return ret;
 	}
 	return *val;
@@ -711,9 +670,9 @@ int anx7625_reg_block_read(uint8_t bus, uint8_t saddr, uint8_t reg_addr, uint8_t
 	int ret;
 
 	i2c_access_workaround(bus, saddr);
-	ret = i2c_read_bytes(bus, saddr, reg_addr, buf, len);
+	ret = platformI2cRead(saddr, reg_addr, buf, len);
 	if (ret < 0)
-		ANXERROR("Failed to read i2c block=%#x:%#x[len=%#x]\n", saddr,
+		ANX_LOG_ERROR("Failed to read i2c block=%#x:%#x[len=%#x]", saddr,
 			 reg_addr, len);
 	return ret;
 }
@@ -722,9 +681,9 @@ int anx7625_reg_write(uint8_t bus, uint8_t saddr, uint8_t reg_addr, uint8_t reg_
 	int ret;
 
 	i2c_access_workaround(bus, saddr);
-	ret = i2c_writeb(bus, saddr, reg_addr, reg_val);
+	ret = platformI2cWrite(saddr, reg_addr, reg_val);
 	if (ret < 0)
-		ANXERROR("Failed to write i2c id=%#x:%#x\n", saddr, reg_addr);
+		ANX_LOG_ERROR("Failed to write i2c id=%#x:%#x", saddr, reg_addr);
 
 	return ret;
 }
@@ -757,7 +716,7 @@ int wait_aux_op_finish(uint8_t bus) {
 	int loop;
 
 	for (loop = 0; loop < 150; loop++) {
-		mdelay(2);
+		platformDelayMs(2);
 		anx7625_reg_read(bus, RX_P0_ADDR, AP_AUX_CTRL_STATUS, &val);
 		if (!(val & AP_AUX_CTRL_OP_EN)) {
 			ret = 0;
@@ -766,13 +725,13 @@ int wait_aux_op_finish(uint8_t bus) {
 	}
 
 	if (ret != 0) {
-		ANXERROR("Timed out waiting aux operation.\n");
+		ANX_LOG_ERROR("Timed out waiting aux operation.");
 		return ret;
 	}
 
 	ret = anx7625_reg_read(bus, RX_P0_ADDR, AP_AUX_CTRL_STATUS, &val);
 	if (ret < 0 || val & 0x0F) {
-		ANXDEBUG("aux status %02x\n", val);
+		ANX_LOG_DBG("aux status %02x", val);
 		ret = -1;
 	}
 
@@ -827,16 +786,16 @@ int anx7625_calculate_m_n(u32 pixelclock, unsigned long *m, unsigned long *n, ui
 
 	if (pixelclock > PLL_OUT_FREQ_ABS_MAX / POST_DIVIDER_MIN) {
 		/* pixel clock frequency is too high */
-		ANXERROR("pixelclock %u higher than %lu, "
-			 "output may be unstable\n",
+		ANX_LOG_ERROR("pixelclock %u higher than %lu, "
+			 "output may be unstable",
 			 pixelclock, PLL_OUT_FREQ_ABS_MAX / POST_DIVIDER_MIN);
 		return 1;
 	}
 
 	if (pixelclock < PLL_OUT_FREQ_ABS_MIN / POST_DIVIDER_MAX) {
 		/* pixel clock frequency is too low */
-		ANXERROR("pixelclock %u lower than %lu, "
-			 "output may be unstable\n",
+		ANX_LOG_ERROR("pixelclock %u lower than %lu, "
+			 "output may be unstable",
 			 pixelclock, PLL_OUT_FREQ_ABS_MIN / POST_DIVIDER_MAX);
 		return 1;
 	}
@@ -855,7 +814,7 @@ int anx7625_calculate_m_n(u32 pixelclock, unsigned long *m, unsigned long *n, ui
 			;
 
 		if (post_divider > POST_DIVIDER_MAX) {
-			ANXERROR("cannot find property post_divider(%d)\n",
+			ANX_LOG_ERROR("cannot find property post_divider(%d)",
 				 post_divider);
 			return 1;
 		}
@@ -874,7 +833,7 @@ int anx7625_calculate_m_n(u32 pixelclock, unsigned long *m, unsigned long *n, ui
 	}
 
 	if (pixelclock * post_divider > PLL_OUT_FREQ_ABS_MAX) {
-		ANXINFO("act clock(%u) large than maximum(%lu)\n",
+		ANX_LOG_INFO("act clock(%u) large than maximum(%lu)",
 			pixelclock * post_divider, PLL_OUT_FREQ_ABS_MAX);
 		return 1;
 	}
@@ -912,7 +871,7 @@ int anx7625_odfc_config(uint8_t bus, uint8_t post_divider) {
 			MIPI_PLL_RESET_N);
 
 	if (ret < 0)
-		ANXERROR("IO error.\n");
+		ANX_LOG_ERROR("IO error.");
 
 	return ret;
 }
@@ -927,11 +886,11 @@ int anx7625_dsi_video_config(uint8_t bus, struct display_timing *dt) {
 				    &post_divider);
 
 	if (ret != 0) {
-		ANXERROR("cannot get property m n value.\n");
+		ANX_LOG_ERROR("cannot get property m n value.");
 		return -1;
 	}
 
-	ANXINFO("compute M(%lu), N(%lu), divider(%d).\n", m, n, post_divider);
+	ANX_LOG_INFO("compute M(%lu), N(%lu), divider(%d).", m, n, post_divider);
 
 	/* configure pixel clock */
 	ret = anx7625_reg_write(bus, RX_P0_ADDR, PIXEL_CLOCK_L,
@@ -1004,7 +963,7 @@ int anx7625_dsi_video_config(uint8_t bus, struct display_timing *dt) {
 	ret |= anx7625_odfc_config(bus, post_divider - 1);
 
 	if (ret < 0)
-		ANXERROR("mipi dsi setup IO error.\n");
+		ANX_LOG_ERROR("mipi dsi setup IO error.");
 
 	return ret;
 }
@@ -1016,7 +975,7 @@ int anx7625_swap_dsi_lane3(uint8_t bus) {
 	/* swap MIPI-DSI data lane 3 P and N */
 	ret = anx7625_reg_read(bus, RX_P1_ADDR, MIPI_SWAP, &val);
 	if (ret < 0) {
-		ANXERROR("IO error: access MIPI_SWAP.\n");
+		ANX_LOG_ERROR("IO error: access MIPI_SWAP.");
 		return -1;
 	}
 
@@ -1030,7 +989,7 @@ int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt) {
 	/* swap MIPI-DSI data lane 3 P and N */
 	ret = anx7625_swap_dsi_lane3(bus);
 	if (ret < 0) {
-		ANXERROR("IO error: swap dsi lane 3 failed.\n");
+		ANX_LOG_ERROR("IO error: swap dsi lane 3 failed.");
 		return ret;
 	}
 
@@ -1059,14 +1018,14 @@ int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt) {
 
 	ret |= anx7625_dsi_video_config(bus, dt);
 	if (ret < 0) {
-		ANXERROR("dsi video tg config failed\n");
+		ANX_LOG_ERROR("dsi video tg config failed");
 		return ret;
 	}
 
 	/* toggle m, n ready */
 	ret = anx7625_write_and(bus, RX_P1_ADDR, MIPI_DIGITAL_PLL_6,
 				~(MIPI_M_NUM_READY | MIPI_N_NUM_READY));
-	mdelay(1);
+	platformDelayMs(1);
 	ret |= anx7625_write_or(bus, RX_P1_ADDR, MIPI_DIGITAL_PLL_6,
 				MIPI_M_NUM_READY | MIPI_N_NUM_READY);
 
@@ -1077,7 +1036,7 @@ int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt) {
 	ret |= anx7625_reg_write(bus, RX_P1_ADDR, MIPI_LANE_CTRL_10, 0x80);
 
 	if (ret < 0)
-		ANXERROR("IO error: mipi dsi enable init failed.\n");
+		ANX_LOG_ERROR("IO error: mipi dsi enable init failed.");
 
 	return ret;
 }
@@ -1085,14 +1044,14 @@ int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt) {
 int anx7625_dsi_config(uint8_t bus, struct display_timing *dt) {
 	int ret;
 
-	ANXINFO("config dsi.\n");
+	ANX_LOG_INFO("config dsi.");
 
 	/* DSC disable */
 	ret = anx7625_write_and(bus, RX_P0_ADDR, R_DSC_CTRL_0, ~DSC_EN);
 	ret |= anx7625_api_dsi_config(bus, dt);
 
 	if (ret < 0) {
-		ANXERROR("IO error: api dsi config error.\n");
+		ANX_LOG_ERROR("IO error: api dsi config error.");
 		return ret;
 	}
 
@@ -1102,9 +1061,9 @@ int anx7625_dsi_config(uint8_t bus, struct display_timing *dt) {
 	ret |= anx7625_write_and(bus, RX_P0_ADDR, AP_AV_STATUS, ~AP_MIPI_MUTE);
 
 	if (ret < 0)
-		ANXERROR("IO error: enable mipi rx failed.\n");
+		ANX_LOG_ERROR("IO error: enable mipi rx failed.");
 	else
-		ANXINFO("success to config DSI\n");
+		ANX_LOG_INFO("success to config DSI");
 
 	return ret;
 }
@@ -1144,11 +1103,11 @@ int sp_tx_get_edid_block(uint8_t bus) {
 	ret = anx7625_reg_read(bus, RX_P0_ADDR, AP_AUX_BUFF_START, &val);
 
 	if (ret < 0) {
-		ANXERROR("IO error: access AUX BUFF.\n");
+		ANX_LOG_ERROR("IO error: access AUX BUFF.");
 		return -1;
 	}
 
-	ANXINFO("EDID Block = %d\n", val + 1);
+	ANX_LOG_INFO("EDID Block = %d", val + 1);
 
 	if (val > 3)
 		val = 1;
@@ -1167,7 +1126,7 @@ int edid_read(uint8_t bus, uint8_t offset, uint8_t *pblock_buf) {
 
 		if (c == 1) {
 			sp_tx_rst_aux(bus);
-			ANXERROR("edid read failed, reset!\n");
+			ANX_LOG_ERROR("edid read failed, reset!");
 			cnt++;
 		} else {
 			anx7625_reg_block_read(bus, RX_P0_ADDR, AP_AUX_BUFF_START, MAX_DPCD_BUFFER_SIZE, pblock_buf);
@@ -1194,7 +1153,7 @@ int segments_edid_read(uint8_t bus, uint8_t segment, uint8_t *buf, uint8_t offse
 	ret |= anx7625_reg_write(bus, RX_P0_ADDR, AP_AUX_ADDR_7_0, 0x50);
 
 	if (ret < 0) {
-		ANXERROR("IO error: aux initial failed.\n");
+		ANX_LOG_ERROR("IO error: aux initial failed.");
 		return ret;
 	}
 
@@ -1205,7 +1164,7 @@ int segments_edid_read(uint8_t bus, uint8_t segment, uint8_t *buf, uint8_t offse
 
 		if (c == 1) {
 			ret = sp_tx_rst_aux(bus);
-			ANXERROR("segment read failed, reset!\n");
+			ANX_LOG_ERROR("segment read failed, reset!");
 			cnt++;
 		} else {
 			ret = anx7625_reg_block_read(bus, RX_P0_ADDR,
@@ -1232,7 +1191,7 @@ int sp_tx_edid_read(uint8_t bus, uint8_t *pedid_blocks_buf, uint32_t size) {
 	ret |= anx7625_write_and(bus, RX_P0_ADDR, AP_AUX_ADDR_19_16, 0xf0);
 
 	if (ret < 0) {
-		ANXERROR("access aux channel IO error.\n");
+		ANX_LOG_ERROR("access aux channel IO error.");
 		return -1;
 	}
 
@@ -1308,9 +1267,9 @@ void anx7625_disable_pd_protocol(uint8_t bus) {
 	ret |= anx7625_reg_write(bus, RX_P0_ADDR, 0x88, 0x00);
 
 	if (ret < 0)
-		ANXERROR("Failed to disable PD feature.\n");
+		ANX_LOG_ERROR("Failed to disable PD feature.");
 	else
-		ANXINFO("Disabled PD feature.\n");
+		ANX_LOG_INFO("Disabled PD feature.");
 }
 
 int anx7625_power_on_init(uint8_t bus) {
@@ -1324,15 +1283,15 @@ int anx7625_power_on_init(uint8_t bus) {
 		//Check interface workable
 		ret = anx7625_reg_read(bus, RX_P0_ADDR, FLASH_LOAD_STA, &val);
 		if (ret < 0) {
-			ANXERROR("Failed to load flash\n");
+			ANX_LOG_ERROR("Failed to load flash");
 			return ret;
 		}
 
 		if ((val & FLASH_LOAD_STA_CHK) != FLASH_LOAD_STA_CHK) {
-			mdelay(1);
+			platformDelayMs(1);
 			continue;
 		}
-		ANXINFO("Init interface.\n");
+		ANX_LOG_INFO("Init interface.");
 
 		//anx7625_disable_pd_protocol(bus);
 
@@ -1344,7 +1303,7 @@ int anx7625_power_on_init(uint8_t bus) {
 			continue;
 		}
 
-		ANXINFO("Firmware: ver %#02x, rev %#02x.\n", version, revision);
+		ANX_LOG_INFO("Firmware: ver %#02x, rev %#02x.", version, revision);
 		return 0;
 	}
 	return -1;
@@ -1368,7 +1327,7 @@ void anx7625_start_dp_work(uint8_t bus) {
 	if (ret < 0)
 		return;
 
-	ANXINFO("Secure OCM version=%02x\n", val);
+	ANX_LOG_INFO("Secure OCM version=%02x", val);
 }
 
 int anx7625_hpd_change_detect(uint8_t bus) {
@@ -1377,12 +1336,12 @@ int anx7625_hpd_change_detect(uint8_t bus) {
 
 	ret = anx7625_reg_read(bus, RX_P0_ADDR, SYSTEM_STATUS, &status);
 	if (ret < 0) {
-		ANXERROR("IO error: Failed to read HPD_STATUS register.\n");
+		ANX_LOG_ERROR("IO error: Failed to read HPD_STATUS register.");
 		return ret;
 	}
 
 	if (status & HPD_STATUS) {
-		ANXINFO("HPD event received 0x7e:0x45=%#x\n", status);
+		ANX_LOG_INFO("HPD event received 0x7e:0x45=%#x", status);
 		anx7625_start_dp_work(bus);
 		return 1;
 	}
@@ -1402,9 +1361,9 @@ void anx7625_parse_edid(const struct edid *edid, struct display_timing *dt) {
 	dt->vfront_porch 	= edid->mode.vso - edid->mode.vborder;
 	dt->vback_porch 	= (edid->mode.vbl - edid->mode.vso - edid->mode.vspw - edid->mode.vborder);
 
-	ANXINFO("pixelclock(%d).\n"
-		" hactive(%d), hsync(%d), hfp(%d), hbp(%d)\n"
-		" vactive(%d), vsync(%d), vfp(%d), vbp(%d)\n",
+	ANX_LOG_INFO("pixelclock(%d)"
+		" hactive(%d), hsync(%d), hfp(%d), hbp(%d)"
+		" vactive(%d), vsync(%d), vfp(%d), vbp(%d)",
 		dt->pixelclock,
 		dt->hactive, dt->hsync_len, dt->hfront_porch, dt->hback_porch,
 		dt->vactive, dt->vsync_len, dt->vfront_porch, dt->vback_porch);

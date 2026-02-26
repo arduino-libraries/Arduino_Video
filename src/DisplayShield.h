@@ -1,21 +1,15 @@
 #pragma once
 #include "Arduino.h"
 
-class H7DisplayShield {
+class DisplayShield {
     public:
         virtual int init(int edidmode) = 0;
         virtual int getEdidMode(int h, int v);
         virtual int getStatus();
 };
 
-class GigaDisplayShieldClass : public H7DisplayShield {
-    public:
-        int init(int edidmode);
-        int getEdidMode(int h, int v);
-        int getStatus();
-};
-
-class USBCVideoClass : public H7DisplayShield {
+#ifdef ARDUINO_ARCH_MBED
+class GigaDisplayShieldClass : public DisplayShield {
     public:
         int init(int edidmode);
         int getEdidMode(int h, int v);
@@ -23,4 +17,13 @@ class USBCVideoClass : public H7DisplayShield {
 };
 
 extern GigaDisplayShieldClass GigaDisplayShield;
+#endif /* ARDUINO_ARCH_MBED */
+
+class USBCVideoClass : public DisplayShield {
+    public:
+        int init(int edidmode);
+        int getEdidMode(int h, int v);
+        int getStatus();
+};
+
 extern USBCVideoClass USBCVideo;
