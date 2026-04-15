@@ -9,10 +9,11 @@
   by Leonardo Cavagnis
 */
 
-#include "Arduino_Video.h"
+#include <Arduino_Video_LVGLConfig.h>
+#include <Arduino_Video.h>
 
 #ifdef ARDUINO_VIDEO_HAS_TOUCH
-#include "Arduino_GigaDisplayTouch.h"
+#include <Arduino_GigaDisplayTouch.h>
 #endif
 
 #include "lvgl.h"
