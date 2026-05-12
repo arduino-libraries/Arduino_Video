@@ -6,13 +6,7 @@ extern "C" {
 #include "video_modes.h"
 }
 
-#ifdef ARDUINO_ARCH_MBED
-#include "st7701.h"
-
 int GigaDisplayShieldClass::init(int edidmode) {
-    //Init LCD Controller
-    st7701_init((enum edid_modes) edidmode);
-
     return 0;
 }
 
@@ -25,7 +19,6 @@ int GigaDisplayShieldClass::getStatus() {
 }
 
 GigaDisplayShieldClass GigaDisplayShield;
-#endif /* ARDUINO_ARCH_MBED */
 
 int USBCVideoClass::init(int edidmode) {
     struct edid recognized_edid;

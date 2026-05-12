@@ -40,11 +40,6 @@ struct display_timing {
 #define DMA2D_INPUT_RGB565  0x00000002U  /* RGB565 color mode */
 #endif
 
-#ifdef ARDUINO_ARCH_MBED
-/* DSI handle is only available on mbed platform */
-extern DSI_HandleTypeDef dsi;
-#endif
-
 int			dsi_init(uint8_t bus, struct edid *edid, struct display_timing *dt);
 void		dsi_lcdClear(uint32_t color);
 void		dsi_lcdDrawImage(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint32_t ColorMode);
