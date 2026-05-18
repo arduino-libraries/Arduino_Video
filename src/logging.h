@@ -12,8 +12,6 @@
 // #define ANX_LOG_ENABLE
 
 #if defined(ANX_LOG_ENABLE)
-
-#if defined(__ZEPHYR__)
 #include <zephyr/logging/log.h>
 #include <stm32h7xx.h>
 LOG_MODULE_DECLARE(sketch, LOG_LEVEL_INF);
@@ -21,33 +19,6 @@ LOG_MODULE_DECLARE(sketch, LOG_LEVEL_INF);
 #define ANX_LOG_ERROR(fmt, ...) LOG_ERR(fmt, ##__VA_ARGS__)
 #define ANX_LOG_INFO(fmt, ...)  LOG_INF(fmt, ##__VA_ARGS__)
 #define ANX_LOG_DBG(fmt, ...)   LOG_DBG(fmt, ##__VA_ARGS__)
-
-#else /* ARDUINO_ARCH_MBED */
-#include <cstdio>
-#include <cstdarg>
-#include <mbed.h>
-#include <stm32h7xx.h>
-
-/* Common logging function for mbed platform */
-/* USART6 on PG14 (TX) / PG9 (RX) to match Zephyr console */
-inline void anx_log_print(const char *prefix, const char *fmt, ...) {
-    static mbed::UnbufferedSerial serial(PG_14, PG_9, 115200);
-    char buf[256];
-    int len = snprintf(buf, sizeof(buf) - 2, "%s", prefix);
-    va_list args;
-    va_start(args, fmt);
-    len += vsnprintf(buf + len, sizeof(buf) - 2 - len, fmt, args);
-    va_end(args);
-    buf[len++] = '\r';
-    buf[len++] = '\n';
-    serial.write(buf, len);
-}
-
-#define ANX_LOG_ERROR(fmt, ...) anx_log_print("ANX ERR: ", fmt, ##__VA_ARGS__)
-#define ANX_LOG_INFO(fmt, ...)  anx_log_print("ANX INF: ", fmt, ##__VA_ARGS__)
-#define ANX_LOG_DBG(fmt, ...)   anx_log_print("ANX DBG: ", fmt, ##__VA_ARGS__)
-
-#endif /* __ZEPHYR__ */
 
 #else /* ANX_LOG_ENABLE not defined - disable all logging */
 

@@ -2,16 +2,16 @@
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`class` [`Arduino_H7_Video`](#class-arduino_h7_video) | The main class for managing the video controller and the display.
+`class` [`Arduino_Video`](#class-arduino_video) | The main class for managing the video controller and the display.
 
-# class [`Arduino_H7_Video`](#class-arduino_h7_video)
+# class [`Arduino_Video`](#class-arduino_video)
 The main class for managing the video controller and the display.
 
 ## Summary
 
 | Members                                                     | Descriptions                                |
 |-------------------------------------------------------------|---------------------------------------------|
-| `public ` [`Arduino_H7_Video`](#public-arduino_h7_videoint-width-int-height-h7displayshield-shield) | Construct a new Arduino_H7_Video object with the specified width, height, and display shield. |
+| `public ` [`Arduino_Video`](#public-arduino_videoint-width-int-height-displayshield-shield) | Construct a new Arduino_Video object with the specified width, height, and display shield. |
 | `public int` [`begin`](#public-int-begin) | Initialize the video controller and display. |
 | `public void` [`end`](#public-void-end) | De-initialize the video controller and display. |
 | `public bool` [`detect`](#public-bool-detect) | Checks if the display is connected. |
@@ -27,9 +27,9 @@ The main class for managing the video controller and the display.
 
 ## Members
 
-### `public ` [`Arduino_H7_Video`](#)`(int width, int height, H7DisplayShield &shield)`
+### `public ` [`Arduino_Video`](#)`(int width, int height, DisplayShield &shield)`
 
-Construct a new Arduino_H7_Video object with the specified width, height, and display shield.
+Construct a new Arduino_Video object with the specified width, height, and display shield.
 
 #### Parameters
 - `width`: The width of the display.

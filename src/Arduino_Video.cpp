@@ -26,7 +26,6 @@
 #include "Arduino_Video.h"
 
 #include "dsi.h"
-#include "SDRAM.h"
 #include "logging.h"
 extern "C" {
 #include "video_modes.h"
@@ -83,11 +82,6 @@ int Arduino_Video::begin() {
   textFont(Font_5x7);
 #endif
 
-#if defined(ARDUINO_GIGA) && !defined(__ZEPHYR__)
-  /* Configure SDRAM */
-  SDRAM.begin(dsi_getFramebufferEnd());
-#endif
-
   /* Video controller/bridge init */
   int err_code = _shield->init(_edidMode);
   if (err_code < 0) {
@@ -117,11 +111,6 @@ int Arduino_Video::begin() {
 
     platformLvglStartTick();
   #endif
-
-#if !defined(ARDUINO_GIGA) && !defined(__ZEPHYR__)
-  /* Configure SDRAM */
-  SDRAM.begin(dsi_getFramebufferEnd()); //FIXME: SDRAM init after video controller init can cause display glitch at start-up
-#endif
 
   return 0;
 }

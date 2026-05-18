@@ -33,8 +33,6 @@
 
 #if defined(__ZEPHYR__) && defined(CONFIG_INPUT_GT911)
 #define ARDUINO_VIDEO_HAS_TOUCH
-#elif defined(ARDUINO_ARCH_MBED) && defined(ARDUINO_GIGA)
-#define ARDUINO_VIDEO_HAS_TOUCH
 #endif
 
 enum PlatformGpio {

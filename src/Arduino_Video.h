@@ -55,7 +55,7 @@ public:
  */
 #if defined(ARDUINO_PORTENTA_H7_M7)
   Arduino_Video(int width = 1024, int height = 768, DisplayShield &shield = USBCVideo);
-#elif defined(ARDUINO_GIGA) && defined(ARDUINO_ARCH_MBED)
+#elif defined(ARDUINO_GIGA)
   Arduino_Video(int width = 800, int height = 480, DisplayShield &shield = GigaDisplayShield);
 #else
   #error "Arduino_Video: unsupported board or core configuration"

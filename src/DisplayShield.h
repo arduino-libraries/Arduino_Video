@@ -8,7 +8,6 @@ class DisplayShield {
         virtual int getStatus();
 };
 
-#ifdef ARDUINO_ARCH_MBED
 class GigaDisplayShieldClass : public DisplayShield {
     public:
         int init(int edidmode);
@@ -17,7 +16,6 @@ class GigaDisplayShieldClass : public DisplayShield {
 };
 
 extern GigaDisplayShieldClass GigaDisplayShield;
-#endif /* ARDUINO_ARCH_MBED */
 
 class USBCVideoClass : public DisplayShield {
     public:
