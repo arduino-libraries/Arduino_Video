@@ -31,12 +31,10 @@
 /* GPIO specifications from devicetree */
 #define ANX7625_NODE DT_NODELABEL(anx7625)
 
+static const struct device *i2c_dev = DEVICE_DT_GET(DT_PHANDLE(ANX7625_NODE, i2c_bus));
 static const struct gpio_dt_spec video_on_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, video_on_gpios);
 static const struct gpio_dt_spec video_rst_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, video_rst_gpios);
 static const struct gpio_dt_spec otg_on_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, otg_on_gpios);
-
-/* I2C device */
-static const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
 /* Platform function implementations -----------------------------------------*/
 
