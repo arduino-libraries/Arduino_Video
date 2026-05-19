@@ -20,6 +20,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyrPinctrl.h>
 
 #include "../platform.h"
 #include "../logging.h"
@@ -40,6 +41,11 @@ static const struct gpio_dt_spec otg_on_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, ot
 
 int platformInit(void) {
     int ret;
+
+    /* Init the I2C device and re-apply DEFAULT pinctrl state so shared
+     * pins are remuxed back to I2C after other peripherals have used them.
+     */
+    (void)zephyr::arduino::init_dev_apply_pinctrl(i2c_dev);
 
     /* Check I2C device ready */
     if (!device_is_ready(i2c_dev)) {
