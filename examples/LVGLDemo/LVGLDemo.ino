@@ -11,14 +11,18 @@
 
 #include "Arduino_Video.h"
 
-#ifdef ARDUINO_VIDEO_HAS_TOUCH
+#if defined(ARDUINO_GIGA)
+  #define TOUCH_ENABLED 1
+#endif
+
+#if TOUCH_ENABLED
 #include "Arduino_GigaDisplayTouch.h"
 #endif
 
 #include "lvgl.h"
 
 Arduino_Video Display;
-#ifdef ARDUINO_VIDEO_HAS_TOUCH
+#if TOUCH_ENABLED
 Arduino_GigaDisplayTouch TouchDetector;
 #endif
 
@@ -52,7 +56,7 @@ void setup() {
       error();
   }
 
-#ifdef ARDUINO_VIDEO_HAS_TOUCH
+#if TOUCH_ENABLED
   TouchDetector.begin();
 #endif
 

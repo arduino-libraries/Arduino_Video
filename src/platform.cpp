@@ -22,12 +22,14 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyrPinctrl.h>
 
-#include "../platform.h"
-#include "../logging.h"
+#include "platform.h"
+#include "logging.h"
 
 #if __has_include("lvgl.h")
 #include "lvgl.h"
 #endif
+
+#if defined(ARDUINO_PORTENTA_H7_M7) || defined(PORTENTA_H7_PINS)
 
 /* GPIO specifications from devicetree */
 #define ANX7625_NODE DT_NODELABEL(anx7625)
@@ -147,8 +149,11 @@ void platformDelayMs(uint32_t ms) {
     k_msleep(ms);
 }
 
+#endif /* ARDUINO_PORTENTA_H7_M7 || ARDUINO_PORTENTA_H7_PINS */
+
 void platformLvglStartTick(void) {
 #if __has_include("lvgl.h")
+#if (LVGL_VERSION_MAJOR == 9)
     static struct k_timer lvgl_tick_timer;
     static bool started = false;
     if (!started) {
@@ -159,6 +164,7 @@ void platformLvglStartTick(void) {
         k_timer_start(&lvgl_tick_timer, K_MSEC(16), K_MSEC(16));
         started = true;
     }
+#endif
 #endif
 }
 

@@ -14,15 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifdef __ZEPHYR__
+
+#if defined(__ZEPHYR__) && !defined(ARDUINO_GIGA)
 
 #include <Arduino.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/mipi_dsi.h>
-#include "../dsi.h"
-#include "../logging.h"
+#include "dsi.h"
+#include "logging.h"
 
 #define BYTES_PER_PIXEL     2
 

@@ -106,6 +106,34 @@ public:
    */
    bool detect();
 
+  /**
+   * @brief Draw a buffer to the display at the specified coordinates.
+   * 
+   * @param x The x-coordinate of the top-left corner where the buffer will be drawn.
+   * @param y The y-coordinate of the top-left corner where the buffer will be drawn.
+   * @param buf A pointer to the buffer containing the pixel data.
+   * @return int 0 if the buffer is successfully drawn, otherwise an error code.
+   */
+  int drawBuffer(uint16_t x, uint16_t y, const void *buf);
+
+  /**
+   * @brief Get a pointer to the framebuffer.
+   * 
+   * @return void* A pointer to the framebuffer, or nullptr if the framebuffer is not available.
+   */
+  void* getFramebuffer();
+
+  #if defined(__ZEPHYR__) 
+  /**
+   * @brief Set the frame descriptor for the display.
+   * 
+   * @param w The width of the frame in pixels.
+   * @param h The height of the frame in pixels.
+   * @param pitch The number of pixels between consecutive rows in the data buffer.
+   * @param buf_size The size of the data buffer in bytes.
+   */
+  void setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_t buf_size);
+  #endif
 #ifdef ARDUINO_VIDEO_HAS_GRAPHICS
   /**
    * @brief Clear the display.
