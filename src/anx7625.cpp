@@ -484,7 +484,7 @@ int anx7625_init(uint8_t bus) {
 		ANX_LOG_ERROR("Failed to power on.");
 		return -1;
 	}
-	ANX_LOG_INFO("Powering on anx7625 successfull.");
+	ANX_LOG_INFO("Powering on anx7625 successful.");
 	platformDelayMs(500); /* Wait for anx7625 to be stable */
 
 	if(anx7625_is_power_provider(0)) {

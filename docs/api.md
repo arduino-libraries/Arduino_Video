@@ -76,7 +76,7 @@ De-initialize the video controller, unloading drawing contexts and disabling act
 Checks if the display shield hardware is physically connected to the board.
 
 #### Returns
-`bool`: `true` if connected, `false` otherwise.
+`bool`: True if the display is connected, False otherwise.
 
 ---
 
