@@ -4,31 +4,39 @@
 
 The Arduino Video library is a C++ library designed to handle the video output of Arduino boards based on the STM32H7 microcontroller with DSI video interface. DSI stands for Display Serial Interface, which is a serial interface used to connect a display to the microcontroller.
 
+**Note:** This library works strictly under the [ArduinoCore-zephyr](https://github.com/arduino/ArduinoCore-zephyr) core environment. Standard Mbed or non-RTOS Arduino cores are not supported.
+
 This library is based on the graphics primitives of the [ArduinoGraphics](https://github.com/arduino-libraries/ArduinoGraphics) library and currently supports the Arduino Portenta H7 and Arduino Giga R1 WiFi boards. The library offers two modes of operation for the Portenta H7 board: you can connect the display to the video output via a USB Type-C connection or use the Giga Display Shield. For the Giga R1 board, only the Giga Display Shield is supported.
 
-The library allows you to draw graphics elements on the screen using simple graphics primitives such as lines, circles, images, etc. Additionally, you can integrate third-party graphic libraries like [LVGL](https://lvgl.io/) to achieve more complex GUI.
+The library allows you to draw graphics elements on the screen using simple graphics primitives such as lines, circles, images, etc. Additionally, you can integrate third-party graphic libraries like [LVGL](https://lvgl.io/) (v9.x or higher) to achieve more complex GUI.
 
 The library provides methods for initializing the video controller, clearing the screen, and drawing basic graphics elements.
 
 ## Features
 
 - Handles video output of Arduino boards based on the STM32H7 microcontroller with DSI video interface
+- Exclusive compatibility with the **ArduinoCore-zephyr** RTOS environment
 - Allows drawing graphics elements using simple primitives like lines, circles, images, etc.
-- Integration of third-party graphic libraries like LVGL for more complex GUI
+- Integration of third-party graphic libraries like LVGL (v9.x) for more complex GUI
 
 ## Usage
 
-To use this library, you must have a supported Arduino board and a display. Once you have connected the display to the board, you can include the display library in your Arduino sketch and use its functions to draw graphic elements on the screen. 
-Here is a minimal example for the Arduino GIGA R1 WiFi with Giga Display Shield:
+To use this library, you must have a supported Arduino board, a display, and the **ArduinoCore-zephyr** installed via the Board Manager. Once you have connected the display to the board, you can include the library in your Arduino sketch and use its functions to draw graphic elements on the screen. 
+
+Thanks to smart internal macros, the constructor automatically detects your board type and resolution parameters. Here is a minimal example for the Arduino GIGA R1 WiFi with Giga Display Shield:
 
 ```cpp
 #include "Arduino_Video.h"
 #include "ArduinoGraphics.h"
 
-Arduino_Video Display(800, 480, GigaDisplayShield);
+// Width, height, and shield type are automatically configured based on your target board!
+Arduino_Video Display;
 
 void setup() {
-  Display.begin();
+  // Initialize the video controller. Returns 0 if successful.
+  if (Display.begin() != 0) {
+    while (1); // Stop execution if init fails
+  }
   
   // Draw a green rectangle that covers the entire display
   Display.beginDraw();
