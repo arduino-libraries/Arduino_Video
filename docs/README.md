@@ -1,7 +1,5 @@
 # Arduino Video Library
 
-[![License](https://img.shields.io/badge/License-LGPLv3-blue.svg)]()
-
 The Arduino Video library is a C++ library designed to handle the video output of Arduino boards based on the STM32H7 microcontroller with DSI video interface. DSI stands for Display Serial Interface, which is a serial interface used to connect a display to the microcontroller.
 
 **Note:** This library works strictly under the [ArduinoCore-zephyr](https://github.com/arduino/ArduinoCore-zephyr) core environment. Standard Mbed or non-RTOS Arduino cores are not supported.
@@ -66,7 +64,3 @@ To learn more about usage of this library, you can check out the following guide
 ## API
 
 The API documentation can be found [here](./api.md).
-
-## License
-
-This library is released under the [LGPLv3 license]().

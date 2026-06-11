@@ -17,4 +17,10 @@ It acts as a hardware abstraction layer, allowing you to draw basic shapes via [
 
 ---
 
+## License
+
+Except where noted in the file headers, most of the files in this library are licensed under the terms of the GNU General Public License, version 2, so that is the license that applies to the library as a whole.
+
+---
+
 📚 For more information about this library, please refer to the documentation [here](./docs/).
