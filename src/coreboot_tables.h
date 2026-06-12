@@ -256,8 +256,8 @@ struct lb_forward {
  *
  * Each pixel is represented by exactly `bits_per_pixel` bits. If a
  * pixel (or a color component therein) doesn't fill a whole byte or
- * doesn't start on a byte boundary, it starts at the least signifi-
- * cant bit not occupied by the previous pixel (or color component).
+ * doesn't start on a byte boundary, it starts at the least significant
+ * bit not occupied by the previous pixel (or color component).
  * Pixels (or color components) that span multiple bytes always start
  * in the byte with the lowest address.
  *
