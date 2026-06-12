@@ -9,13 +9,6 @@
 
 */
 
-/**
-  ******************************************************************************
-  * @file    logging.h
-  * @brief   Unified logging macros for platform abstraction
-  ******************************************************************************
-  */
-
 #ifndef ARDUINO_VIDEO_LOGGING_H
 #define ARDUINO_VIDEO_LOGGING_H
 

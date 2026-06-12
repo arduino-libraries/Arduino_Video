@@ -34,8 +34,6 @@ static const struct gpio_dt_spec video_on_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, 
 static const struct gpio_dt_spec video_rst_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, video_rst_gpios);
 static const struct gpio_dt_spec otg_on_gpio = GPIO_DT_SPEC_GET(ANX7625_NODE, otg_on_gpios);
 
-/* Platform function implementations -----------------------------------------*/
-
 int platformInit(void) {
     int ret;
 

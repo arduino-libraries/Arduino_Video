@@ -9,13 +9,6 @@
 
 */
 
-/**
- * @file Arduino_Video.cpp
- * @author Leonardo Cavagnis
- * @brief Source file for the Arduino Video library.
- */
-
- /* Includes ------------------------------------------------------------------*/
 #include "Arduino_Video.h"
 
 #include "dsi.h"
@@ -43,7 +36,6 @@ extern "C" {
 #endif
 #endif
 
-/* Private function prototypes -----------------------------------------------*/
 #if __has_include ("lvgl.h")
 #if defined(__ZEPHYR__)
 #include "platform.h"
@@ -51,7 +43,6 @@ void lvgl_displayFlushing(lv_display_t * display, const lv_area_t * area, unsign
 #endif
 #endif /* __has_include ("lvgl.h") */
 
-/* Private variables ---------------------------------------------------------*/
 #if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
 /* Note: These variables are defined in the global scope because the LVGL
  *       'lvgl_displayFlushing' callback is a static function */
@@ -67,7 +58,6 @@ static struct display_buffer_descriptor desc = {
 uint16_t *buffer = nullptr;
 #endif
 
-/* Functions -----------------------------------------------------------------*/
 Arduino_Video::Arduino_Video(int width, int height, DisplayShield &shield)
 #ifdef ARDUINO_VIDEO_HAS_GRAPHICS
    : ArduinoGraphics(width, height)
@@ -365,5 +355,3 @@ void Arduino_Video::setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_
     desc.pitch = pitch;  /** Data buffer row height in pixels */
 }
 #endif
-
-/**** END OF FILE ****/

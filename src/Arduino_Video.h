@@ -9,23 +9,11 @@
 
 */
 
-/**
- * @file Arduino_Video.h
- * @author Leonardo Cavagnis
- * @brief Header file for the Arduino Video library.
- *
- * This library allows to manage the video output on Arduino boards,
- * providing functions to draw graphics on the screen.
- */
-
 #ifndef _ARDUINO_VIDEO_H
 #define _ARDUINO_VIDEO_H
 
-/* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 #include "DisplayShield.h"
-
-/* Class ----------------------------------------------------------------------*/
 
 /**
  * @class Arduino_Video
