@@ -21,7 +21,7 @@
  */
 class Arduino_Video
 #ifdef ARDUINO_VIDEO_HAS_GRAPHICS
- : public ArduinoGraphics
+  : public ArduinoGraphics
 #endif
 {
 public:
@@ -39,7 +39,7 @@ public:
 #elif defined(ARDUINO_GIGA)
   Arduino_Video(int width = 800, int height = 480, DisplayShield &shield = GigaDisplayShield);
 #else
-  #error "Arduino_Video: unsupported board or core configuration"
+#error "Arduino_Video: unsupported board or core configuration"
 #endif
 
   /**
@@ -85,7 +85,7 @@ public:
    *
    * @return true if the display is connected, false otherwise.
    */
-   bool detect();
+  bool detect();
 
   /**
    * @brief Draw a buffer to the display at the specified coordinates.
@@ -102,9 +102,9 @@ public:
    *
    * @return void* A pointer to the framebuffer, or nullptr if the framebuffer is not available.
    */
-  void* getFramebuffer();
+  void *getFramebuffer();
 
-  #if defined(__ZEPHYR__)
+#if defined(__ZEPHYR__)
   /**
    * @brief Set the frame descriptor for the display.
    *
@@ -114,7 +114,7 @@ public:
    * @param buf_size The size of the data buffer in bytes.
    */
   void setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_t buf_size);
-  #endif
+#endif
 #ifdef ARDUINO_VIDEO_HAS_GRAPHICS
   /**
    * @brief Clear the display.
@@ -143,11 +143,11 @@ public:
   virtual void set(int x, int y, uint8_t r, uint8_t g, uint8_t b);
 #endif
 private:
-    DisplayShield*    _shield;
-    bool                _rotated;
-    int                 _edidMode;
-    uint32_t            _width;
-    uint32_t            _height;
+  DisplayShield *_shield;
+  bool _rotated;
+  int _edidMode;
+  uint32_t _width;
+  uint32_t _height;
 };
 
 #endif /* _ARDUINO_VIDEO_H */

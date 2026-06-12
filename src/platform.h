@@ -31,17 +31,17 @@
 #endif
 
 enum PlatformGpio {
-    PLATFORM_GPIO_VIDEO_ON,
-    PLATFORM_GPIO_VIDEO_RST,
-    PLATFORM_GPIO_OTG_ON,
+  PLATFORM_GPIO_VIDEO_ON,
+  PLATFORM_GPIO_VIDEO_RST,
+  PLATFORM_GPIO_OTG_ON,
 };
 
-int  platformInit(void);
+int platformInit(void);
 void platformGpioSet(PlatformGpio gpio, bool state);
 bool platformGpioGet(PlatformGpio gpio);
 void platformGpioSetDirection(PlatformGpio gpio, bool output);
-int  platformI2cWrite(uint8_t saddr, uint8_t offset, uint8_t val);
-int  platformI2cRead(uint8_t saddr, uint8_t offset, uint8_t *buf, size_t len);
+int platformI2cWrite(uint8_t saddr, uint8_t offset, uint8_t val);
+int platformI2cRead(uint8_t saddr, uint8_t offset, uint8_t *buf, size_t len);
 void platformDelayMs(uint32_t ms);
 void platformLvglStartTick(void);
 
