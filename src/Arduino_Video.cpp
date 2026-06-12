@@ -47,7 +47,7 @@ extern "C" {
 #if __has_include ("lvgl.h")
 #if defined(__ZEPHYR__)
 #include "platform.h"
-void lvgl_displayFlushing(lv_display_t * display, const lv_area_t * area, unsigned char * px_map);  
+void lvgl_displayFlushing(lv_display_t * display, const lv_area_t * area, unsigned char * px_map);
 #endif
 #endif /* __has_include ("lvgl.h") */
 
@@ -79,7 +79,7 @@ Arduino_Video::Arduino_Video(int width, int height, DisplayShield &shield)
   _edidMode = _shield->getEdidMode(width, height);
 
   switch(_edidMode) {
-    case EDID_MODE_640x480_60Hz ... EDID_MODE_800x600_59Hz: 
+    case EDID_MODE_640x480_60Hz ... EDID_MODE_800x600_59Hz:
     case EDID_MODE_1024x768_60Hz ... EDID_MODE_1920x1080_60Hz:
       _rotated = (width < height) ? true : false;
       break;
@@ -136,9 +136,9 @@ int Arduino_Video::begin() {
     buffer = static_cast<uint16_t*>(ptrFB);
 
     display_blanking_on(display_dev);
-    
+
     setFrameDesc(width(), height(), width(), (width() * height() * sizeof(uint16_t)));
-#else 
+#else
   /* Video controller/bridge init */
   int err_code = _shield->init(_edidMode);
   if (err_code < 0) {
@@ -149,7 +149,7 @@ int Arduino_Video::begin() {
   #if __has_include("lvgl.h")
     /* Initialize LVGL library */
     lv_init();
-    
+
     /* Create a draw buffer */
     static lv_color_t * buf1 = (lv_color_t*)malloc((width() * height() / 10)); /* Declare a buffer for 1/10 screen size */
     if (buf1 == NULL) {
@@ -231,7 +231,7 @@ void Arduino_Video::clear(){
 #if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
   uint16_t *fb = (uint16_t *)display_get_framebuffer(display_dev);
   memset(fb, 0, display_caps.x_resolution * display_caps.y_resolution * 2);
-#else 
+#else
   if(_rotated) {
     x_size = (height() <= dsi_getDisplayXSize())? height() : dsi_getDisplayXSize();
     y_size = (width() <= dsi_getDisplayYSize())? width() : dsi_getDisplayYSize();
@@ -251,13 +251,13 @@ void Arduino_Video::set(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
       x_rot = ((height()-1) - y);
       y_rot = x;
 
-      if (x_rot >= height() || y_rot >= width()) 
+      if (x_rot >= height() || y_rot >= width())
         return;
     } else {
       x_rot = x;
       y_rot = y;
 
-      if (x_rot >= width() || y_rot >= height()) 
+      if (x_rot >= width() || y_rot >= height())
         return;
     }
 
@@ -265,7 +265,7 @@ void Arduino_Video::set(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     if (x_rot >= display_caps.x_resolution || y_rot >= display_caps.y_resolution)
       return;
 #else
-    if (x_rot >= dsi_getDisplayXSize() || y_rot >= dsi_getDisplayYSize()) 
+    if (x_rot >= dsi_getDisplayXSize() || y_rot >= dsi_getDisplayYSize())
       return;
 #endif
 
@@ -298,7 +298,7 @@ void lvgl_displayFlushing(lv_display_t * disp, const lv_area_t * area, unsigned 
     if (rotation != LV_DISPLAY_ROTATION_0) {
         rotated_buf = (uint8_t*)realloc(rotated_buf, w * h * 4);
         lv_color_format_t cf = lv_display_get_color_format(disp);
-        #if (LVGL_VERSION_MINOR < 2) 
+        #if (LVGL_VERSION_MINOR < 2)
         rotation = LV_DISPLAY_ROTATION_90; // bugfix: force 90 degree rotation for lvgl 9.1 end earlier
         #endif
         lv_draw_sw_rotate(px_map, rotated_buf,
@@ -320,7 +320,7 @@ void lvgl_displayFlushing(lv_display_t * disp, const lv_area_t * area, unsigned 
     }
 
 #if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
-    uint16_t *dst = buffer; 
+    uint16_t *dst = buffer;
     uint16_t *src = (uint16_t *)px_map;
 
     for (uint32_t y = 0; y < h; y++) {

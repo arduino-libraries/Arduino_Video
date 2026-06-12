@@ -195,7 +195,7 @@ void dsi_drawCurrentFrameBuffer(bool reload) {
         .height = display_caps.y_resolution,
         .pitch = display_caps.x_resolution,
     };
-    
+
     uint8_t *back = (uint8_t *) dsi_getCurrentFrameBuffer();
 
     // Zero-copy path: the LTDC driver uses this buffer directly as

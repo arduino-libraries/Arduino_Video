@@ -39,7 +39,7 @@ class Arduino_Video
 public:
 /**
  * @brief Constructs a new Arduino_Video object with the specified width, height, and display shield.
- * 
+ *
  * @param width The width of the display.
  * @param height The height of the display.
  * @param shield The display shield used.
@@ -61,47 +61,47 @@ public:
 
   /**
    * @brief Initialize the video controller and display.
-   * 
+   *
    * @return int 0 if initialization is successful, otherwise an error code.
    */
   int begin();
 
   /**
    * @brief De-initialize the video controller and display.
-   */  
+   */
   void end();
 
   /**
    * @brief Get the width of the display.
-   * 
+   *
    * @return int The width of the display.
    */
   int width();
 
   /**
    * @brief Get the height of the display.
-   * 
+   *
    * @return int The height of the display.
    */
   int height();
 
   /**
    * @brief Check if the display is rotated.
-   * 
+   *
    * @return bool True if the display is rotated, false otherwise.
    */
   bool isRotated();
 
   /**
-   * @brief Checks if the display is connected.  
-   * 
-   * @return true if the display is connected, false otherwise. 
+   * @brief Checks if the display is connected.
+   *
+   * @return true if the display is connected, false otherwise.
    */
    bool detect();
 
   /**
    * @brief Draw a buffer to the display at the specified coordinates.
-   * 
+   *
    * @param x The x-coordinate of the top-left corner where the buffer will be drawn.
    * @param y The y-coordinate of the top-left corner where the buffer will be drawn.
    * @param buf A pointer to the buffer containing the pixel data.
@@ -111,15 +111,15 @@ public:
 
   /**
    * @brief Get a pointer to the framebuffer.
-   * 
+   *
    * @return void* A pointer to the framebuffer, or nullptr if the framebuffer is not available.
    */
   void* getFramebuffer();
 
-  #if defined(__ZEPHYR__) 
+  #if defined(__ZEPHYR__)
   /**
    * @brief Set the frame descriptor for the display.
-   * 
+   *
    * @param w The width of the frame in pixels.
    * @param h The height of the frame in pixels.
    * @param pitch The number of pixels between consecutive rows in the data buffer.
@@ -145,7 +145,7 @@ public:
 
   /**
    * @brief Set the color of the pixel at the specified coordinates.
-   * 
+   *
    * @param x The x-coordinate of the pixel.
    * @param y The y-coordinate of the pixel.
    * @param r The red component of the color.
