@@ -25,15 +25,15 @@ class Arduino_Video
 #endif
 {
 public:
-/**
- * @brief Constructs a new Arduino_Video object with the specified width, height, and display shield.
- *
- * @param width The width of the display.
- * @param height The height of the display.
- * @param shield The display shield used.
- *               - GigaDisplayShield: Giga Display Shield
- *               - USBCVideo: Display attach to the USB-C port
- */
+  /**
+   * @brief Constructs a new Arduino_Video object with the specified width, height, and display shield.
+   *
+   * @param width The width of the display.
+   * @param height The height of the display.
+   * @param shield The display shield used.
+   *               - GigaDisplayShield: Giga Display Shield
+   *               - USBCVideo: Display attach to the USB-C port
+   */
 #if defined(ARDUINO_PORTENTA_H7_M7)
   Arduino_Video(int width = 1024, int height = 768, DisplayShield &shield = USBCVideo);
 #elif defined(ARDUINO_GIGA)
