@@ -359,10 +359,10 @@ void* Arduino_Video::getFramebuffer() {
 
 #if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
 void Arduino_Video::setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_t buf_size) {
-	desc.buf_size = buf_size;
-	desc.width = w;  /** Number of pixels between consecutive rows in the data buffer */
-	desc.height = h;  /** Data buffer row width in pixels */
-	desc.pitch = pitch;	/** Data buffer row height in pixels */
+    desc.buf_size = buf_size;
+    desc.width = w;  /** Number of pixels between consecutive rows in the data buffer */
+    desc.height = h;  /** Data buffer row width in pixels */
+    desc.pitch = pitch;  /** Data buffer row height in pixels */
 }
 #endif
 
