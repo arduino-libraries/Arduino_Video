@@ -9,7 +9,7 @@
 
 */
 
- #include "DisplayShield.h"
+#include "DisplayShield.h"
 
 #include "Arduino.h"
 #include "anx7625.h"
@@ -19,60 +19,60 @@ extern "C" {
 
 #if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
 int GigaDisplayShieldClass::init(int edidmode) {
-    return 0;
+  return 0;
 }
 
 int GigaDisplayShieldClass::getEdidMode(int h, int v) {
-    return EDID_MODE_480x800_60Hz;
+  return EDID_MODE_480x800_60Hz;
 }
 
 int GigaDisplayShieldClass::getStatus() {
-    return 1; // TODO: Not implemented;
+  return 1;  // TODO: Not implemented;
 }
 
 GigaDisplayShieldClass GigaDisplayShield;
 #endif /* ARDUINO_GIGA && __ZEPHYR__ */
 
 int USBCVideoClass::init(int edidmode) {
-    struct edid recognized_edid;
-    int err_code = 0;
+  struct edid recognized_edid;
+  int err_code = 0;
 
-    memset(&recognized_edid, 0, sizeof(recognized_edid));
+  memset(&recognized_edid, 0, sizeof(recognized_edid));
 
-    //Initialization of ANX7625
-    err_code = anx7625_init(0);
-    if(err_code < 0) {
-        return err_code;
-    }
+  //Initialization of ANX7625
+  err_code = anx7625_init(0);
+  if (err_code < 0) {
+    return err_code;
+  }
 
-    //Checking HDMI plug event
-    err_code = anx7625_wait_hpd_event(0);
-    if(err_code < 0) {
-        return err_code;
-    }
+  //Checking HDMI plug event
+  err_code = anx7625_wait_hpd_event(0);
+  if (err_code < 0) {
+    return err_code;
+  }
 
-    //Read EDID
-    anx7625_dp_get_edid(0, &recognized_edid);
+  //Read EDID
+  anx7625_dp_get_edid(0, &recognized_edid);
 
-    //DSI Configuration
-    err_code = anx7625_dp_start(0, &recognized_edid, (enum edid_modes) edidmode);
-    if(err_code < 0) {
-        return err_code;
-    }
+  //DSI Configuration
+  err_code = anx7625_dp_start(0, &recognized_edid, (enum edid_modes)edidmode);
+  if (err_code < 0) {
+    return err_code;
+  }
 
-    return 0;
+  return 0;
 }
 
 int USBCVideoClass::getEdidMode(int h, int v) {
-    int edidmode = video_modes_get_edid(h, v);
+  int edidmode = video_modes_get_edid(h, v);
 
-    return edidmode;
+  return edidmode;
 }
 
 int USBCVideoClass::getStatus() {
-    int detected = anx7625_get_hpd_event(0);
+  int detected = anx7625_get_hpd_event(0);
 
-    return detected;
+  return detected;
 }
 
 USBCVideoClass USBCVideo;

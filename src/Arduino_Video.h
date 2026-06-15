@@ -9,23 +9,11 @@
 
 */
 
-/**
- * @file Arduino_Video.h
- * @author Leonardo Cavagnis
- * @brief Header file for the Arduino Video library.
- *
- * This library allows to manage the video output on Arduino boards,
- * providing functions to draw graphics on the screen.
- */
-
 #ifndef _ARDUINO_VIDEO_H
 #define _ARDUINO_VIDEO_H
 
-/* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 #include "DisplayShield.h"
-
-/* Class ----------------------------------------------------------------------*/
 
 /**
  * @class Arduino_Video
@@ -33,25 +21,25 @@
  */
 class Arduino_Video
 #ifdef ARDUINO_VIDEO_HAS_GRAPHICS
- : public ArduinoGraphics
+  : public ArduinoGraphics
 #endif
 {
 public:
-/**
- * @brief Constructs a new Arduino_Video object with the specified width, height, and display shield.
- * 
- * @param width The width of the display.
- * @param height The height of the display.
- * @param shield The display shield used.
- *               - GigaDisplayShield: Giga Display Shield
- *               - USBCVideo: Display attach to the USB-C port
- */
+  /**
+   * @brief Constructs a new Arduino_Video object with the specified width, height, and display shield.
+   *
+   * @param width The width of the display.
+   * @param height The height of the display.
+   * @param shield The display shield used.
+   *               - GigaDisplayShield: Giga Display Shield
+   *               - USBCVideo: Display attach to the USB-C port
+   */
 #if defined(ARDUINO_PORTENTA_H7_M7)
   Arduino_Video(int width = 1024, int height = 768, DisplayShield &shield = USBCVideo);
 #elif defined(ARDUINO_GIGA)
   Arduino_Video(int width = 800, int height = 480, DisplayShield &shield = GigaDisplayShield);
 #else
-  #error "Arduino_Video: unsupported board or core configuration"
+#error "Arduino_Video: unsupported board or core configuration"
 #endif
 
   /**
@@ -61,47 +49,47 @@ public:
 
   /**
    * @brief Initialize the video controller and display.
-   * 
+   *
    * @return int 0 if initialization is successful, otherwise an error code.
    */
   int begin();
 
   /**
    * @brief De-initialize the video controller and display.
-   */  
+   */
   void end();
 
   /**
    * @brief Get the width of the display.
-   * 
+   *
    * @return int The width of the display.
    */
   int width();
 
   /**
    * @brief Get the height of the display.
-   * 
+   *
    * @return int The height of the display.
    */
   int height();
 
   /**
    * @brief Check if the display is rotated.
-   * 
+   *
    * @return bool True if the display is rotated, false otherwise.
    */
   bool isRotated();
 
   /**
-   * @brief Checks if the display is connected.  
-   * 
-   * @return true if the display is connected, false otherwise. 
+   * @brief Checks if the display is connected.
+   *
+   * @return true if the display is connected, false otherwise.
    */
-   bool detect();
+  bool detect();
 
   /**
    * @brief Draw a buffer to the display at the specified coordinates.
-   * 
+   *
    * @param x The x-coordinate of the top-left corner where the buffer will be drawn.
    * @param y The y-coordinate of the top-left corner where the buffer will be drawn.
    * @param buf A pointer to the buffer containing the pixel data.
@@ -111,22 +99,22 @@ public:
 
   /**
    * @brief Get a pointer to the framebuffer.
-   * 
+   *
    * @return void* A pointer to the framebuffer, or nullptr if the framebuffer is not available.
    */
-  void* getFramebuffer();
+  void *getFramebuffer();
 
-  #if defined(__ZEPHYR__) 
+#if defined(__ZEPHYR__)
   /**
    * @brief Set the frame descriptor for the display.
-   * 
+   *
    * @param w The width of the frame in pixels.
    * @param h The height of the frame in pixels.
    * @param pitch The number of pixels between consecutive rows in the data buffer.
    * @param buf_size The size of the data buffer in bytes.
    */
   void setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_t buf_size);
-  #endif
+#endif
 #ifdef ARDUINO_VIDEO_HAS_GRAPHICS
   /**
    * @brief Clear the display.
@@ -145,7 +133,7 @@ public:
 
   /**
    * @brief Set the color of the pixel at the specified coordinates.
-   * 
+   *
    * @param x The x-coordinate of the pixel.
    * @param y The y-coordinate of the pixel.
    * @param r The red component of the color.
@@ -155,11 +143,11 @@ public:
   virtual void set(int x, int y, uint8_t r, uint8_t g, uint8_t b);
 #endif
 private:
-    DisplayShield*    _shield;
-    bool                _rotated;
-    int                 _edidMode;
-    uint32_t            _width;
-    uint32_t            _height;
+  DisplayShield *_shield;
+  bool _rotated;
+  int _edidMode;
+  uint32_t _width;
+  uint32_t _height;
 };
 
 #endif /* _ARDUINO_VIDEO_H */
