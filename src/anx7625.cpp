@@ -24,7 +24,7 @@
 
 #include "logging.h"
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(PORTENTA_H7_PINS)
+#if defined(ARDUINO_PORTENTA_H7_M7)
 
 #include "dsi.h"
 #include "anx7625.h"

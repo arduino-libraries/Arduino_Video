@@ -24,7 +24,7 @@
 #include "lvgl.h"
 #endif
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(PORTENTA_H7_PINS)
+#if defined(ARDUINO_PORTENTA_H7_M7)
 
 /* GPIO specifications from devicetree */
 #define ANX7625_NODE DT_NODELABEL(anx7625)
@@ -142,7 +142,7 @@ void platformDelayMs(uint32_t ms) {
   k_msleep(ms);
 }
 
-#endif /* ARDUINO_PORTENTA_H7_M7 || ARDUINO_PORTENTA_H7_PINS */
+#endif /* ARDUINO_PORTENTA_H7_M7 */
 
 void platformLvglStartTick(void) {
 #if __has_include("lvgl.h")
