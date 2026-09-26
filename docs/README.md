@@ -49,9 +49,9 @@ void loop() { }
 ```
 ## Examples
 
-- **[ArduinoLogo](../examples/ArduinoLogo):** This example demonstrates how to display an Arduino logo image on the screen.
-- **[ArduinoLogoDrawing](../examples/ArduinoLogoDrawing):** This example demonstrates how to draw an Arduino logo image using graphics primitives (line, circle, rect, etc.).
-- **[LVGLDemo](../examples/LVGLDemo):** This example demonstrates how to create a graphical user interface (GUI) using the LVGL library. It includes the [Arduino_GigaDisplayTouch](https://github.com/arduino-libraries/Arduino_GigaDisplayTouch/) library to handle touch events.
+- **[ArduinoLogo](https://github.com/arduino-libraries/Arduino_Video/tree/main/examples/ArduinoLogo):** This example demonstrates how to display an Arduino logo image on the screen.
+- **[ArduinoLogoDrawing](https://github.com/arduino-libraries/Arduino_Video/tree/main/examples/ArduinoLogoDrawing):** This example demonstrates how to draw an Arduino logo image using graphics primitives (line, circle, rect, etc.).
+- **[LVGLDemo](https://github.com/arduino-libraries/Arduino_Video/tree/main/examples/LVGLDemo):** This example demonstrates how to create a graphical user interface (GUI) using the LVGL library. It includes the [Arduino_GigaDisplayTouch](https://github.com/arduino-libraries/Arduino_GigaDisplayTouch/) library to handle touch events.
 
 ## Guides
 
@@ -63,4 +63,4 @@ To learn more about usage of this library, you can check out the following guide
 
 ## API
 
-The API documentation can be found [here](./api.md).
+The API documentation can be found [here](https://github.com/arduino-libraries/Arduino_Video/blob/main/docs/api.md).
