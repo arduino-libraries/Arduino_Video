@@ -23,6 +23,7 @@
 
 /*Color depth: 8 (A8), 16 (RGB565), 24 (RGB888), 32 (XRGB8888)*/
 #define LV_COLOR_DEPTH 16
+#define LV_COLOR_FORMAT_DEFAULT LV_COLOR_FORMAT_RGB565
 
 /*=========================
    STDLIB WRAPPER SETTINGS
@@ -260,6 +261,7 @@
 
 /*Add a custom handler when assert happens e.g. to restart the MCU*/
 #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
+#define LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING 1
 #define LV_ASSERT_HANDLER while(1);   /*Halt by default*/
 
 /*-------------
