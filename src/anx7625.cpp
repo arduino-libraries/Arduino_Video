@@ -23,8 +23,9 @@
 #include <Arduino.h>
 
 #include "logging.h"
+#include "video_backend.h"
 
-#if defined(ARDUINO_PORTENTA_H7_M7)
+#if defined(ARDUINO_PORTENTA_H7_M7) && !defined(ARDUINO_VIDEO_DIRECT_FB)
 
 #include "dsi.h"
 #include "anx7625.h"

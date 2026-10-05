@@ -11,13 +11,14 @@
 
 #include "Arduino_Video.h"
 
+#include "video_backend.h"
 #include "dsi.h"
 #include "logging.h"
 extern "C" {
 #include "video_modes.h"
 }
 
-#if defined(__ZEPHYR__) && defined(ARDUINO_GIGA)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
@@ -43,7 +44,7 @@ void lvgl_displayFlushing(lv_display_t *display, const lv_area_t *area, unsigned
 #endif
 #endif /* __has_include ("lvgl.h") */
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
 /* Note: These variables are defined in the global scope because the LVGL
  *       'lvgl_displayFlushing' callback is a static function */
 const struct device *display_dev;
@@ -96,7 +97,7 @@ int Arduino_Video::begin() {
   textFont(Font_5x7);
 #endif
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)  // Backend for Arduino Giga R1
+#if defined(ARDUINO_VIDEO_DIRECT_FB)  // Framebuffer-managed panel (ST7701)
   display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 
   if (!device_is_ready(display_dev)) {
@@ -207,7 +208,7 @@ void Arduino_Video::end() {
 void Arduino_Video::beginDraw() {
   ArduinoGraphics::beginDraw();
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   uint16_t *fb = (uint16_t *)display_get_framebuffer(display_dev);
   memset(fb, 0, display_caps.x_resolution * display_caps.y_resolution * sizeof(uint16_t));
 #else
@@ -218,7 +219,7 @@ void Arduino_Video::beginDraw() {
 void Arduino_Video::endDraw() {
   ArduinoGraphics::endDraw();
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   // no need to explicitly flush, as we are writing directly to the framebuffer
 #else
   dsi_drawCurrentFrameBuffer();
@@ -229,7 +230,7 @@ void Arduino_Video::clear() {
   [[maybe_unused]] uint32_t bg = ArduinoGraphics::background();
   [[maybe_unused]] uint32_t x_size, y_size;
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   uint16_t *fb = (uint16_t *)display_get_framebuffer(display_dev);
   memset(fb, 0, display_caps.x_resolution * display_caps.y_resolution * 2);
 #else
@@ -262,7 +263,7 @@ void Arduino_Video::set(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
       return;
   }
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   if (x_rot >= display_caps.x_resolution || y_rot >= display_caps.y_resolution)
     return;
 #else
@@ -270,7 +271,7 @@ void Arduino_Video::set(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     return;
 #endif
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   // The pixel is written directly into the framebuffer in RGB565 format.
   // Rotation is automatically handled if the display is rotated.
   uint16_t color = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
@@ -318,7 +319,7 @@ void lvgl_displayFlushing(lv_display_t *disp, const lv_area_t *area, unsigned ch
     h = temp;
   }
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   uint16_t *dst = buffer;
   uint16_t *src = (uint16_t *)px_map;
 
@@ -336,7 +337,7 @@ void lvgl_displayFlushing(lv_display_t *disp, const lv_area_t *area, unsigned ch
 #endif  //end lvgl
 
 int Arduino_Video::drawBuffer([[maybe_unused]]uint16_t x, [[maybe_unused]]uint16_t y, [[maybe_unused]]const void *buf) {
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   if (!device_is_ready(display_dev)) {
     return -ENODEV;
   }
@@ -347,7 +348,7 @@ int Arduino_Video::drawBuffer([[maybe_unused]]uint16_t x, [[maybe_unused]]uint16
 }
 
 void *Arduino_Video::getFramebuffer() {
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
   /* * In Zephyr, 'buffer' is the pointer allocated or retrieved from the display device during begin() */
   void *fb = display_get_framebuffer(display_dev);
   return fb;
@@ -356,7 +357,7 @@ void *Arduino_Video::getFramebuffer() {
 #endif
 }
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
 void Arduino_Video::setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_t buf_size) {
   desc.buf_size = buf_size;
   desc.width = w;     /** Number of pixels between consecutive rows in the data buffer */
