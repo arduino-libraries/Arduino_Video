@@ -16,6 +16,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/mipi_dsi.h>
+#include <zephyrPinctrl.h>
 #include "dsi.h"
 #include "logging.h"
 
@@ -32,10 +33,14 @@ struct display_capabilities display_caps;
 int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, struct display_timing *dt) {
   int ret;
 
-  /* Get LTDC device */
+  /* GET LTDC device and initialize it if needed. */
   display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
   if (!device_is_ready(display_dev)) {
-    return -ENODEV;
+    ret = zephyr::arduino::init_dev_apply_pinctrl(display_dev);
+    if (ret < 0) {
+      ANX_LOG_ERROR("dsi_init: LTDC initialization failed: %d", ret);
+      return -ENODEV;
+    }
   }
 
   /* Get framebuffer base from display driver */
