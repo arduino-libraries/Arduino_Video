@@ -106,6 +106,16 @@ int Arduino_Video::begin() {
     }
   }
 
+#if DT_NODE_EXISTS(DT_NODELABEL(st7701))
+  const struct device *panel_dev = DEVICE_DT_GET(DT_NODELABEL(st7701));
+  if (!device_is_ready(panel_dev)) {
+    if (zephyr::arduino::init_dev_apply_pinctrl(panel_dev) < 0) {
+      printk("\t<err> ST7701 Panel Initialization Failed!...");
+      return 3;
+    }
+  }
+#endif
+
   display_get_capabilities(display_dev, &display_caps);
   _width = display_caps.y_resolution;
   _height = display_caps.x_resolution;
