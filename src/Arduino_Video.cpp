@@ -108,6 +108,8 @@ int Arduino_Video::begin() {
   }
 
 #if DT_NODE_EXISTS(DT_NODELABEL(st7701))
+  /* The ST7701 panel is deferred-init: bring it up now that the DSI host and
+     LTDC are ready (its boot-time init runs too early and fails). */
   const struct device *panel_dev = DEVICE_DT_GET(DT_NODELABEL(st7701));
   if (!device_is_ready(panel_dev)) {
     if (zephyr::arduino::init_dev_apply_pinctrl(panel_dev) < 0) {

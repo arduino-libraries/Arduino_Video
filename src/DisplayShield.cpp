@@ -52,6 +52,12 @@ GigaDisplayShieldClass GigaDisplayShield;
 #endif
 
 int USBCVideoClass::init(int edidmode) {
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
+  /* USB-C/ANX7625 pipeline is not built in a framebuffer-managed (ST7701)
+     configuration; the panel is driven directly by its Zephyr driver. */
+  (void)edidmode;
+  return -1;
+#else
   struct edid recognized_edid;
   int err_code = 0;
 
@@ -79,6 +85,7 @@ int USBCVideoClass::init(int edidmode) {
   }
 
   return 0;
+#endif
 }
 
 int USBCVideoClass::getEdidMode(int h, int v) {
@@ -88,9 +95,13 @@ int USBCVideoClass::getEdidMode(int h, int v) {
 }
 
 int USBCVideoClass::getStatus() {
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
+  return 0;
+#else
   int detected = anx7625_get_hpd_event(0);
 
   return detected;
+#endif
 }
 
 USBCVideoClass USBCVideo;
