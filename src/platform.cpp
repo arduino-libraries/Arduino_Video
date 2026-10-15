@@ -19,12 +19,13 @@
 
 #include "platform.h"
 #include "logging.h"
+#include "video_backend.h"
 
 #if __has_include("lvgl.h")
 #include "lvgl.h"
 #endif
 
-#if defined(ARDUINO_PORTENTA_H7_M7)
+#if defined(ARDUINO_PORTENTA_H7_M7) && !defined(ARDUINO_VIDEO_DIRECT_FB)
 
 /* GPIO specifications from devicetree */
 #define ANX7625_NODE DT_NODELABEL(anx7625)

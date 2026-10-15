@@ -9,7 +9,9 @@
 
 */
 
-#if defined(__ZEPHYR__) && !defined(ARDUINO_GIGA)
+#include "video_backend.h"
+
+#if defined(__ZEPHYR__) && !defined(ARDUINO_VIDEO_DIRECT_FB)
 
 #include <Arduino.h>
 #include <zephyr/kernel.h>

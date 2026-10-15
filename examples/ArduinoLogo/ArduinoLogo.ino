@@ -17,7 +17,10 @@
 INCBIN(test, "/home/user/Downloads/test.bin");
 */
 
+// Default: video over the USB-C port
 Arduino_Video Display;
+// To drive the Giga Display Shield on a Portenta H7 + Portenta Mid Carrier, use:
+// Arduino_Video Display(800, 480, GigaDisplayShield);
 
 Image img_arduinologo(ENCODING_RGB16, (uint8_t *) texture_raw, 300, 300);
 

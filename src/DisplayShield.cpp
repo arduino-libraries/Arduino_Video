@@ -13,11 +13,13 @@
 
 #include "Arduino.h"
 #include "anx7625.h"
+#include "video_backend.h"
 extern "C" {
 #include "video_modes.h"
 }
 
-#if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
+// Panel driven by the Zephyr ST7701 driver; the library uses the framebuffer.
 int GigaDisplayShieldClass::init([[maybe_unused]]int edidmode) {
   return 0;
 }
@@ -31,9 +33,31 @@ int GigaDisplayShieldClass::getStatus() {
 }
 
 GigaDisplayShieldClass GigaDisplayShield;
-#endif /* ARDUINO_GIGA && __ZEPHYR__ */
+#elif defined(ARDUINO_PORTENTA_H7_M7) && defined(__ZEPHYR__)
+// The Giga Display Shield needs the core built with the Portenta H7 Giga
+// Display configuration (ST7701 panel enabled in devicetree).
+int GigaDisplayShieldClass::init([[maybe_unused]]int edidmode) {
+  return -1;
+}
+
+int GigaDisplayShieldClass::getEdidMode([[maybe_unused]]int h, [[maybe_unused]] int v) {
+  return EDID_MODE_480x800_60Hz;
+}
+
+int GigaDisplayShieldClass::getStatus() {
+  return 0;
+}
+
+GigaDisplayShieldClass GigaDisplayShield;
+#endif
 
 int USBCVideoClass::init(int edidmode) {
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
+  /* USB-C/ANX7625 pipeline is not built in a framebuffer-managed (ST7701)
+     configuration; the panel is driven directly by its Zephyr driver. */
+  (void)edidmode;
+  return -1;
+#else
   struct edid recognized_edid;
   int err_code = 0;
 
@@ -61,6 +85,7 @@ int USBCVideoClass::init(int edidmode) {
   }
 
   return 0;
+#endif
 }
 
 int USBCVideoClass::getEdidMode(int h, int v) {
@@ -70,9 +95,13 @@ int USBCVideoClass::getEdidMode(int h, int v) {
 }
 
 int USBCVideoClass::getStatus() {
+#if defined(ARDUINO_VIDEO_DIRECT_FB)
+  return 0;
+#else
   int detected = anx7625_get_hpd_event(0);
 
   return detected;
+#endif
 }
 
 USBCVideoClass USBCVideo;
