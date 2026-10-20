@@ -22,7 +22,6 @@ jobs:
         - source-path: ./
         - name: ArduinoGraphics
         - name: lvgl
-        - name: Arduino_GigaDisplayTouch
       # sketch paths to compile (recursive) for all boards
       UNIVERSAL_SKETCH_PATHS: |
         - examples/ArduinoLogo
