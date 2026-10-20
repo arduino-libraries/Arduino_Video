@@ -117,8 +117,8 @@ int Arduino_Video::begin() {
 #endif
 
   display_get_capabilities(display_dev, &display_caps);
-  _width = display_caps.y_resolution;
-  _height = display_caps.x_resolution;
+  _width = _rotated ? display_caps.y_resolution : display_caps.x_resolution;
+  _height = _rotated ? display_caps.x_resolution : display_caps.y_resolution;
 
   printk("- Capabilities:\n");
   printk("  x_resolution = %u, y_resolution = %u\n, supported_pixel_formats = %u\n"
@@ -139,7 +139,9 @@ int Arduino_Video::begin() {
 
   display_blanking_on(display_dev);
 
-  setFrameDesc(width(), height(), width(), (width() * height() * sizeof(uint16_t)));
+  setFrameDesc(display_caps.x_resolution, display_caps.y_resolution,
+               display_caps.x_resolution,
+               display_caps.x_resolution * display_caps.y_resolution * sizeof(uint16_t));
 #else
   /* Video controller/bridge init */
   int err_code = _shield->init(_edidMode);
