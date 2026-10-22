@@ -61,8 +61,8 @@ void setup() {
 #endif
 
   /* Create a container with grid 2x2 */
-  static lv_coord_t col_dsc[] = {370, 370, LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {215, 215, LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
   lv_obj_t * cont = lv_obj_create(lv_scr_act());
   lv_obj_set_grid_dsc_array(cont, col_dsc, row_dsc);
   lv_obj_set_size(cont, Display.width(), Display.height());
