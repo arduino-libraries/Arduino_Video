@@ -128,10 +128,15 @@ uint32_t dsi_getDisplayYSize() {
   return display_caps.y_resolution;
 }
 
-/* Returns the back buffer for full-frame drawing + swap */
+/* Returns the back buffer for full-frame drawing + swap, or the front buffer
+   when the display controller has a single framebuffer. */
 uint32_t dsi_getCurrentFrameBuffer() {
   uint8_t *front = (uint8_t *)display_get_framebuffer(display_dev);
+#if CONFIG_STM32_LTDC_FB_NUM >= 2
   return (uint32_t)((front == fb_base) ? fb_base + fb_size : fb_base);
+#else
+  return (uint32_t)front;
+#endif
 }
 
 /* Returns the front buffer for partial/direct updates */
