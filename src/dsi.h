@@ -16,7 +16,7 @@
 
 struct edid;
 
-struct display_timing {
+struct dsi_timing {
   unsigned int pixelclock;
   unsigned int hactive;
   unsigned int hfront_porch;
@@ -43,7 +43,7 @@ struct display_timing {
  * @param dt Pointer to the display timing configuration.
  * @return int 0 on success, otherwise an error code.
  */
-int dsi_init(uint8_t bus, struct edid *edid, struct display_timing *dt);
+int dsi_init(uint8_t bus, struct edid *edid, struct dsi_timing *dt);
 
 /**
  * @brief Clear the framebuffer with a solid color.
