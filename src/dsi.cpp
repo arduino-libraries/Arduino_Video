@@ -51,12 +51,7 @@ int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, str
   }
   ANX_LOG_INFO("dsi_init: framebuffer at %p", fb_base);
 
-  /* Ensure resolution matches the overlay */
   display_get_capabilities(display_dev, &display_caps);
-  if (display_caps.x_resolution != dt->hactive || display_caps.y_resolution != dt->vactive) {
-    ANX_LOG_ERROR("dsi_init: Invalid display resolution");
-    return -ENOTSUP;
-  }
   ANX_LOG_INFO("dsi_init: display resolution %dx%d",
                display_caps.x_resolution, display_caps.y_resolution);
 
@@ -65,8 +60,11 @@ int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, str
   /* Get MIPI-DSI host device */
   mipi_dsi_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_mipi_dsi));
   if (!device_is_ready(mipi_dsi_dev)) {
-    ANX_LOG_INFO("dsi_init: MIPI-DSI device not ready");
-    return -ENODEV;
+    ret = zephyr::arduino::init_dev_apply_pinctrl(mipi_dsi_dev);
+    if (ret < 0) {
+      ANX_LOG_ERROR("dsi_init: MIPI-DSI initialization failed: %d", ret);
+      return -ENODEV;
+    }
   }
   ANX_LOG_INFO("dsi_init: MIPI-DSI device ready");
 
@@ -97,6 +95,15 @@ int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, str
     return ret;
   }
   ANX_LOG_INFO("dsi_init: mipi_dsi_attach success");
+
+  /* The DSI host sets the LTDC resolution on attach */
+  display_get_capabilities(display_dev, &display_caps);
+  if (display_caps.x_resolution != dt->hactive || display_caps.y_resolution != dt->vactive) {
+    ANX_LOG_ERROR("dsi_init: Invalid display resolution");
+    return -ENOTSUP;
+  }
+
+  fb_size = display_caps.x_resolution * display_caps.y_resolution * BYTES_PER_PIXEL;
 
   /* Turn off blanking (enable display output) */
   [[maybe_unused]] int blank_ret = display_blanking_off(display_dev);
