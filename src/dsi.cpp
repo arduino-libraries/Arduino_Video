@@ -30,7 +30,7 @@ static const struct device *mipi_dsi_dev;
 
 struct display_capabilities display_caps;
 
-int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, struct display_timing *dt) {
+int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, struct dsi_timing *dt) {
   int ret;
 
   /* GET LTDC device and initialize it if needed. */
@@ -76,7 +76,7 @@ int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, str
   mdev.pixfmt = MIPI_DSI_PIXFMT_RGB565;
   mdev.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM;
 
-  /* Set timing from display_timing struct */
+  /* Set timing from dsi_timing struct */
   mdev.timings.hactive = dt->hactive;
   mdev.timings.hfp = dt->hfront_porch;
   mdev.timings.hbp = dt->hback_porch;
