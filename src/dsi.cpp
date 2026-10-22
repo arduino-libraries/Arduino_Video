@@ -57,6 +57,14 @@ int dsi_init([[maybe_unused]]uint8_t bus, [[maybe_unused]]struct edid *edid, str
 
   fb_size = display_caps.x_resolution * display_caps.y_resolution * BYTES_PER_PIXEL;
 
+  /* No bridge: the panel is driven by its own Zephyr driver. */
+  if (dt == NULL) {
+    display_blanking_off(display_dev);
+    dsi_lcdClear(0x00);
+    dsi_drawCurrentFrameBuffer();
+    return 0;
+  }
+
   /* Get MIPI-DSI host device */
   mipi_dsi_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_mipi_dsi));
   if (!device_is_ready(mipi_dsi_dev)) {

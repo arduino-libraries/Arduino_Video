@@ -40,7 +40,9 @@ struct dsi_timing {
  *
  * @param bus The DSI bus index.
  * @param edid Pointer to the parsed EDID information.
- * @param dt Pointer to the display timing configuration.
+ * @param dt Pointer to the display timing configuration, or NULL when the
+ *           panel is driven by its own Zephyr driver (only the display
+ *           controller and framebuffer are set up, no DSI device is attached).
  * @return int 0 on success, otherwise an error code.
  */
 int dsi_init(uint8_t bus, struct edid *edid, struct dsi_timing *dt);
