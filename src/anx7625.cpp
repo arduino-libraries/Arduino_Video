@@ -382,10 +382,10 @@ static unsigned long gcd(unsigned long a, unsigned long b);
 static void anx7625_reduction_of_a_fraction(unsigned long *_a, unsigned long *_b);
 static int anx7625_calculate_m_n(u32 pixelclock, unsigned long *m, unsigned long *n, uint8_t *pd);
 static int anx7625_odfc_config(uint8_t bus, uint8_t post_divider);
-static int anx7625_dsi_video_config(uint8_t bus, struct display_timing *dt);
+static int anx7625_dsi_video_config(uint8_t bus, struct dsi_timing *dt);
 static int anx7625_swap_dsi_lane3(uint8_t bus);
-static int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt);
-static int anx7625_dsi_config(uint8_t bus, struct display_timing *dt);
+static int anx7625_api_dsi_config(uint8_t bus, struct dsi_timing *dt);
+static int anx7625_dsi_config(uint8_t bus, struct dsi_timing *dt);
 static int sp_tx_rst_aux(uint8_t bus) ;
 static int sp_tx_aux_wr(uint8_t bus, uint8_t offset);
 static int sp_tx_aux_rd(uint8_t bus, uint8_t len_cmd);
@@ -397,13 +397,13 @@ static void anx7625_disable_pd_protocol(uint8_t bus);
 static int anx7625_power_on_init(uint8_t bus);
 static void anx7625_start_dp_work(uint8_t bus);
 static int anx7625_hpd_change_detect(uint8_t bus);
-static void anx7625_parse_edid(const struct edid *edid, struct display_timing *dt);
+static void anx7625_parse_edid(const struct edid *edid, struct dsi_timing *dt);
 
 /* Functions -----------------------------------------------------------------*/
 
 int anx7625_dp_start(uint8_t bus, const struct edid *edid, enum edid_modes mode) {
 	int ret;
-	struct display_timing dt;
+	struct dsi_timing dt;
 
 	anx7625_parse_edid(edid, &dt);
 
@@ -876,7 +876,7 @@ int anx7625_odfc_config(uint8_t bus, uint8_t post_divider) {
 	return ret;
 }
 
-int anx7625_dsi_video_config(uint8_t bus, struct display_timing *dt) {
+int anx7625_dsi_video_config(uint8_t bus, struct dsi_timing *dt) {
 	unsigned long m, n;
 	u16 htotal;
 	int ret;
@@ -983,7 +983,7 @@ int anx7625_swap_dsi_lane3(uint8_t bus) {
 	return anx7625_reg_write(bus, RX_P1_ADDR, MIPI_SWAP, val);
 }
 
-int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt) {
+int anx7625_api_dsi_config(uint8_t bus, struct dsi_timing *dt) {
 	int val, ret;
 
 	/* swap MIPI-DSI data lane 3 P and N */
@@ -1041,7 +1041,7 @@ int anx7625_api_dsi_config(uint8_t bus, struct display_timing *dt) {
 	return ret;
 }
 
-int anx7625_dsi_config(uint8_t bus, struct display_timing *dt) {
+int anx7625_dsi_config(uint8_t bus, struct dsi_timing *dt) {
 	int ret;
 
 	ANX_LOG_INFO("config dsi.");
@@ -1348,7 +1348,7 @@ int anx7625_hpd_change_detect(uint8_t bus) {
 	return 0;
 }
 
-void anx7625_parse_edid(const struct edid *edid, struct display_timing *dt) {
+void anx7625_parse_edid(const struct edid *edid, struct dsi_timing *dt) {
 	dt->pixelclock 		= edid->mode.pixel_clock;
 
 	dt->hactive 		= edid->mode.ha;

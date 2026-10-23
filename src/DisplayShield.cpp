@@ -13,9 +13,16 @@
 
 #include "Arduino.h"
 #include "anx7625.h"
+#include "dsi.h"
 extern "C" {
 #include "video_modes.h"
 }
+
+#if defined(ARDUINO_PORTENTA_H7_M7)
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyrPinctrl.h>
+#endif
 
 #if defined(ARDUINO_GIGA) && defined(__ZEPHYR__)
 int GigaDisplayShieldClass::init([[maybe_unused]]int edidmode) {
@@ -28,6 +35,35 @@ int GigaDisplayShieldClass::getEdidMode([[maybe_unused]]int h, [[maybe_unused]] 
 
 int GigaDisplayShieldClass::getStatus() {
   return 1;  // TODO: Not implemented;
+}
+
+GigaDisplayShieldClass GigaDisplayShield;
+#elif defined(ARDUINO_PORTENTA_H7_M7)
+// Giga Display Shield on the Portenta Mid Carrier, drawn through the DSI path.
+int GigaDisplayShieldClass::init([[maybe_unused]]int edidmode) {
+#if DT_HAS_COMPAT_STATUS_OKAY(sitronix_st7701)
+  /* Panel, with the DSI host and LTDC it depends on: the panel attach sets the LTDC mode */
+  const struct device *panel_dev = DEVICE_DT_GET(DT_COMPAT_GET_ANY_STATUS_OKAY(sitronix_st7701));
+  if (!device_is_ready(panel_dev)) {
+    int err_code = zephyr::arduino::init_dev_apply_pinctrl(panel_dev);
+    if (err_code < 0) {
+      return err_code;
+    }
+  }
+
+  /* Framebuffer */
+  return dsi_init(0, NULL, NULL);
+#else
+  return -ENODEV;
+#endif
+}
+
+int GigaDisplayShieldClass::getEdidMode([[maybe_unused]]int h, [[maybe_unused]] int v) {
+  return EDID_MODE_480x800_60Hz;
+}
+
+int GigaDisplayShieldClass::getStatus() {
+  return DT_HAS_COMPAT_STATUS_OKAY(sitronix_st7701);
 }
 
 GigaDisplayShieldClass GigaDisplayShield;
