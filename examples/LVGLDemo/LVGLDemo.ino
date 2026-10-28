@@ -2,6 +2,7 @@
   LVGLDemo
 
   Demonstrates basic LVGL widgets: image, checkboxes, button, slider and bar.
+  Widgets are displayed without touch input; the bar animates automatically.
 
   Note: to customize LVGL settings (e.g., enable additional widgets), edit
   lv_conf_user.h in this sketch folder.
@@ -11,29 +12,9 @@
 
 #include "Arduino_Video.h"
 
-#if defined(ARDUINO_GIGA)
-  #define TOUCH_ENABLED 1
-#endif
-
-#if TOUCH_ENABLED
-#include "Arduino_GigaDisplayTouch.h"
-#endif
-
 #include "lvgl.h"
 
 Arduino_Video Display;
-#if TOUCH_ENABLED
-Arduino_GigaDisplayTouch TouchDetector;
-#endif
-
-/* Button click event callback */
-static void btn_event_cb(lv_event_t * e) {
-  static uint32_t cnt = 1;
-  lv_obj_t * btn = (lv_obj_t *)lv_event_get_target(e);
-  lv_obj_t * label = lv_obj_get_child(btn, 0);
-  lv_label_set_text_fmt(label, "%" LV_PRIu32, cnt);
-  cnt++;
-}
 
 /* Slider update value handler */
 static void set_slider_val(void * bar, int32_t val) {
@@ -55,10 +36,6 @@ void setup() {
   if (Display.begin()) {
       error();
   }
-
-#if TOUCH_ENABLED
-  TouchDetector.begin();
-#endif
 
   /* Create a container with grid 2x2 */
   static lv_coord_t col_dsc[] = {370, 370, LV_GRID_TEMPLATE_LAST};
@@ -103,13 +80,13 @@ void setup() {
   lv_style_set_radius(&style_radio, LV_RADIUS_CIRCLE);
   lv_style_init(&style_radio_chk);
   lv_style_set_bg_image_src(&style_radio_chk, NULL);
-  
+
   cb = lv_checkbox_create(obj);
   lv_checkbox_set_text(cb, "Lemon");
   lv_obj_add_flag(cb, LV_OBJ_FLAG_EVENT_BUBBLE);
   lv_obj_add_style(cb, &style_radio, LV_PART_INDICATOR);
   lv_obj_add_style(cb, &style_radio_chk, LV_PART_INDICATOR | LV_STATE_CHECKED);
-  
+
   cb = lv_checkbox_create(obj);
   lv_checkbox_set_text(cb, "Melon");
   lv_obj_add_flag(cb, LV_OBJ_FLAG_EVENT_BUBBLE);
@@ -120,24 +97,23 @@ void setup() {
   lv_obj_t * btn = lv_btn_create(obj);
   lv_obj_set_size(btn, 100, 40);
   lv_obj_center(btn);
-  lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_CLICKED, NULL);
 
   label = lv_label_create(btn);
-  lv_label_set_text(label, "Click me!");
+  lv_label_set_text(label, "Button");
   lv_obj_center(label);
 
   /* [0;1] - Slider */
   obj = lv_obj_create(cont);
   lv_obj_set_grid_cell(obj, LV_GRID_ALIGN_STRETCH, 0, 1,
                         LV_GRID_ALIGN_STRETCH, 1, 1);
-  
+
   lv_obj_t * slider = lv_slider_create(obj);
   lv_slider_set_value(slider, 75, LV_ANIM_OFF);
   lv_obj_center(slider);
   label = lv_label_create(obj);
-  lv_label_set_text(label, "Drag me!");
+  lv_label_set_text(label, "Slider");
   lv_obj_align_to(label, slider, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-  
+
   /* [1;1] - Bar */
   obj = lv_obj_create(cont);
   lv_obj_set_grid_cell(obj, LV_GRID_ALIGN_STRETCH, 1, 1,
@@ -159,7 +135,7 @@ void setup() {
   lv_anim_start(&a);
 }
 
-void loop() { 
+void loop() {
   /* Feed LVGL engine */
   lv_timer_handler();
 }
