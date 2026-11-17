@@ -106,10 +106,12 @@
     #define LV_USE_DRAW_ARM2D_SYNC      0
 
     /* Only build the color format converters actually needed by this library's
-     * examples (RGB565 display only). */
+     * examples (RGB565 display only).
+     * RGB565A8 is required to rotate/scale RGB565 images, since the software
+     * transform renders them into an RGB565A8 buffer. */
     #define LV_DRAW_SW_SUPPORT_RGB565                  1
     #define LV_DRAW_SW_SUPPORT_RGB565_SWAPPED          0
-    #define LV_DRAW_SW_SUPPORT_RGB565A8                0
+    #define LV_DRAW_SW_SUPPORT_RGB565A8                1
     #define LV_DRAW_SW_SUPPORT_RGB888                  0
     #define LV_DRAW_SW_SUPPORT_XRGB8888                0
     #define LV_DRAW_SW_SUPPORT_ARGB8888                0
@@ -501,13 +503,6 @@
 #define LV_USE_CALENDAR   1
 #if LV_USE_CALENDAR
     #define LV_CALENDAR_WEEK_STARTS_MONDAY 0
-    #if LV_CALENDAR_WEEK_STARTS_MONDAY
-        #define LV_CALENDAR_DEFAULT_DAY_NAMES {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
-    #else
-        #define LV_CALENDAR_DEFAULT_DAY_NAMES {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
-    #endif
-
-    #define LV_CALENDAR_DEFAULT_MONTH_NAMES {"January", "February", "March",  "April", "May",  "June", "July", "August", "September", "October", "November", "December"}
     #define LV_USE_CALENDAR_HEADER_ARROW 1
     #define LV_USE_CALENDAR_HEADER_DROPDOWN 1
 #endif  /*LV_USE_CALENDAR*/

@@ -83,13 +83,11 @@ void setup() {
 
   cb = lv_checkbox_create(obj);
   lv_checkbox_set_text(cb, "Lemon");
-  lv_obj_add_flag(cb, LV_OBJ_FLAG_EVENT_BUBBLE);
   lv_obj_add_style(cb, &style_radio, LV_PART_INDICATOR);
   lv_obj_add_style(cb, &style_radio_chk, LV_PART_INDICATOR | LV_STATE_CHECKED);
 
   cb = lv_checkbox_create(obj);
   lv_checkbox_set_text(cb, "Melon");
-  lv_obj_add_flag(cb, LV_OBJ_FLAG_EVENT_BUBBLE);
   lv_obj_add_style(cb, &style_radio, LV_PART_INDICATOR);
   lv_obj_add_style(cb, &style_radio_chk, LV_PART_INDICATOR | LV_STATE_CHECKED);
   lv_obj_add_state(cb, LV_STATE_CHECKED);
