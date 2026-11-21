@@ -157,6 +157,10 @@ int Arduino_Video::begin() {
   if (err_code < 0) {
     return 3; /* Video controller fail init */
   }
+
+  /* The DSI host sets the display resolution on attach */
+  display_get_capabilities(display_dev, &display_caps);
+  _framebufferSize = display_caps.x_resolution * display_caps.y_resolution * sizeof(uint16_t);
 #endif
 
   setFrameDesc(display_caps.x_resolution, display_caps.y_resolution,
